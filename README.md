@@ -43,6 +43,23 @@ randonnees/
 - **Frontend** : servi par Nginx, qui fait aussi reverse-proxy vers le
   backend (`/api`, `/uploads`) pour n'exposer qu'un seul port en prod.
 
+## Raspberry Pi / ARM64
+
+L'image officielle `postgis/postgis` n'est publiée que pour `linux/amd64`.
+Sur Raspberry Pi (arm64) ou tout autre hôte ARM, `docker-compose.yml` utilise
+donc `imresamu/postgis:17-3.6`, un miroir multi-arch (amd64 + arm64) tenu par
+un mainteneur du projet `postgis/docker-postgis`, disponible aussi bien sur
+Pi que sur serveur x86 classique. Si tu avais déjà tenté un
+`docker compose up` avec l'ancienne image amd64 sur le Pi (échec au
+démarrage de `db`), supprime le volume avant de relancer, aucune donnée
+n'ayant pu y être écrite :
+
+```bash
+docker compose down
+docker volume rm randonnees_db_data   # adapte le nom si besoin (`docker volume ls`)
+docker compose up -d --build
+```
+
 ## Prérequis
 
 - Docker et Docker Compose (v2, plugin `docker compose`).
