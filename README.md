@@ -67,6 +67,23 @@ Le site est alors accessible sur `http://<ip-du-serveur>:${FRONTEND_PORT}`
 l'activation de l'extension PostGIS sont appliquées automatiquement au
 démarrage du conteneur `backend`.
 
+### Intégration Traefik
+
+Le service `frontend` porte les labels Traefik pour l'exposition sur
+`randonnees.xavierchapouille.ddns.net` (HTTPS via le certresolver
+`letsencrypt`) et rejoint le réseau Docker externe **`frontend`** sur lequel
+tourne Traefik. Prérequis sur le serveur :
+
+```bash
+docker network create frontend   # si le réseau n'existe pas déjà
+```
+
+Si ton réseau Traefik ou ton certresolver portent un autre nom, adapte les
+labels dans `docker-compose.yml` (bloc `networks:` et labels
+`traefik.docker.network` / `traefik.http.routers.randonnees.tls.certresolver`).
+Le port `80` n'est plus publié sur l'hôte : l'accès passe uniquement par
+Traefik.
+
 ### Variables d'environnement (`.env`)
 
 | Variable | Description |

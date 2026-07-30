@@ -35,10 +35,25 @@ services:
         VITE_IGN_MODE: ${IGN_MODE}
         VITE_IGN_API_KEY: ${IGN_API_KEY}
     restart: unless-stopped
-    ports:
-      - "${FRONTEND_PORT:-80}:80"
     depends_on:
       - backend
+    networks:
+      - default
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=frontend"
+      - "traefik.http.routers.randonnees.rule=Host(`randonnees.xavierchapouille.ddns.net`)"
+      - "traefik.http.routers.randonnees.entrypoints=websecure"
+      - "traefik.http.routers.randonnees.tls=true"
+      - "traefik.http.routers.randonnees.tls.certresolver=letsencrypt"
+      - "traefik.http.services.randonnees.loadbalancer.server.port=80"
+
+networks:
+  default: {}
+  traefik:
+    external: true
+    name: frontend
 
 volumes:
   db_data:
