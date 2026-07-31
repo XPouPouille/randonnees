@@ -20,13 +20,23 @@ from app.services import apply_gpx, fetch_elevations, fetch_poi, fetch_route, hi
 
 router = APIRouter(prefix="/api", tags=["editor"])
 
-MAX_POINTS = 2000
+# Nombre de points cliqués/envoyés manuellement par l'utilisateur (waypoints
+# d'un tracé, jamais des milliers en pratique).
+MAX_WAYPOINTS = 2000
+
+# Un tracé une fois routé sur le réseau IGN (une dizaine de clics peut suffire
+# à générer un itinéraire de plusieurs dizaines de km) compte facilement
+# plusieurs milliers de points de géométrie détaillée - déjà géré ailleurs
+# dans l'appli pour de vraies randonnées importées (jusqu'à plusieurs
+# milliers de points GPX). Une limite bien plus généreuse ici évite de
+# bloquer un aperçu dénivelé/POI ou un enregistrement légitimes.
+MAX_ROUTE_POINTS = 20000
 
 
 @router.post("/elevation", response_model=list[ElevationPointOut])
 def get_elevation(payload: ElevationRequest):
-    if len(payload.points) > MAX_POINTS:
-        raise HTTPException(status_code=422, detail=f"Trop de points (max {MAX_POINTS})")
+    if len(payload.points) > MAX_ROUTE_POINTS:
+        raise HTTPException(status_code=422, detail=f"Trop de points (max {MAX_ROUTE_POINTS})")
     if not payload.points:
         return []
     try:
@@ -40,8 +50,8 @@ def get_elevation(payload: ElevationRequest):
 
 @router.post("/route", response_model=list[LatLon])
 def get_route(payload: RouteRequest):
-    if len(payload.points) > MAX_POINTS:
-        raise HTTPException(status_code=422, detail=f"Trop de points (max {MAX_POINTS})")
+    if len(payload.points) > MAX_WAYPOINTS:
+        raise HTTPException(status_code=422, detail=f"Trop de points (max {MAX_WAYPOINTS})")
     if len(payload.points) < 2:
         return payload.points
     routed = fetch_route([(p.lat, p.lon) for p in payload.points], payload.activity_type)
@@ -50,8 +60,10 @@ def get_route(payload: RouteRequest):
 
 @router.post("/poi", response_model=list[PoiOut])
 def get_poi(payload: PoiRequest):
-    if len(payload.points) > MAX_POINTS:
-        raise HTTPException(status_code=422, detail=f"Trop de points (max {MAX_POINTS})")
+    # fetch_poi sous-échantillonne déjà en interne avant d'interroger
+    # Overpass : pas besoin de refuser une trace routée dense en amont.
+    if len(payload.points) > MAX_ROUTE_POINTS:
+        raise HTTPException(status_code=422, detail=f"Trop de points (max {MAX_ROUTE_POINTS})")
     try:
         results = fetch_poi([(p.lat, p.lon) for p in payload.points], payload.radius_m, payload.categories)
     except requests.RequestException as exc:
@@ -63,13 +75,13 @@ def get_poi(payload: PoiRequest):
 def create_drawn_hike(payload: DrawHikeCreate, db: Session = Depends(get_db)):
     if len(payload.points) < 2:
         raise HTTPException(status_code=422, detail="Il faut au moins 2 points pour former un tracé")
-    if len(payload.points) > MAX_POINTS:
-        raise HTTPException(status_code=422, detail=f"Trop de points (max {MAX_POINTS})")
+    if len(payload.points) > MAX_WAYPOINTS:
+        raise HTTPException(status_code=422, detail=f"Trop de points (max {MAX_WAYPOINTS})")
 
     # Le tracé enregistré suit toujours le réseau IGN (routes/chemins), jamais
     # les segments à vol d'oiseau entre les points cliqués par l'utilisateur.
     routed = fetch_route([(p.lat, p.lon) for p in payload.points], payload.activity_type)
-    if len(routed) > MAX_POINTS:
+    if len(routed) > MAX_ROUTE_POINTS:
         raise HTTPException(status_code=422, detail="Itinéraire calculé trop détaillé, réduisez le nombre de points")
 
     try:

@@ -6,8 +6,12 @@ import { BaseLayers } from "../components/IgnLayers";
 import { ElevationChart } from "../components/ElevationChart";
 import { ACTIVITY_COLORS } from "../activity";
 import { DEFAULT_POI_CATEGORIES, POI_CATEGORIES, POI_LABELS } from "../poi";
-import { haversineKm, type LatLon } from "../geo";
+import { haversineKm, samplePoints, type LatLon } from "../geo";
 import type { ActivityType, ElevationResultPoint, PoiResult } from "../types";
+
+// Un tracé routé peut compter plusieurs milliers de points : inutile d'envoyer
+// cette densité pour un aperçu dénivelé ou une recherche de POI.
+const PREVIEW_SAMPLE_MAX = 300
 
 const POI_COLOR = "#e07b00";
 
@@ -115,7 +119,7 @@ export function CreatePage() {
     setError(null);
     try {
       const forProfile = routedPath && routedPath.length >= 2 ? routedPath : points;
-      const result = await getElevationProfile(forProfile);
+      const result = await getElevationProfile(samplePoints(forProfile, PREVIEW_SAMPLE_MAX));
       setProfile(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -139,7 +143,7 @@ export function CreatePage() {
     setError(null);
     try {
       const path = routedPath && routedPath.length >= 2 ? routedPath : points;
-      const result = await getPoi(path, poiRadius, Array.from(poiCategories));
+      const result = await getPoi(samplePoints(path, PREVIEW_SAMPLE_MAX), poiRadius, Array.from(poiCategories));
       setPois(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
