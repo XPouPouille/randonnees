@@ -35,7 +35,7 @@ import pandas as pd
 import requests
 
 USER_AGENT = "randonnees-import/1.0 (+https://github.com/XPouPouille/randonnees)"
-REQUEST_TIMEOUT = 30
+REQUEST_TIMEOUT = 15
 REQUEST_DELAY_SECONDS = 0.4
 GPX_URL_RE = re.compile(r"https?://[^\s\"'<>]+\.gpx")
 
@@ -117,6 +117,9 @@ def build_name(row: dict, gpx_name: str | None) -> str:
 
 
 def run(xlsx_path: str, dry_run: bool, limit: int | None) -> None:
+    # Progrès visible même redirigé vers un fichier/pipe, et jamais planté par un
+    # nom de rando contenant des caractères que la console locale ne sait pas afficher.
+    sys.stdout.reconfigure(line_buffering=True, errors="backslashreplace")
     rows = load_rows(xlsx_path)
     if limit:
         rows = rows[:limit]
