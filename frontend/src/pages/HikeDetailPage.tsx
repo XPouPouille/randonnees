@@ -5,6 +5,7 @@ import { deleteHike, getHike, updateHike } from "../api";
 import { BaseLayers } from "../components/IgnLayers";
 import { ElevationChart } from "../components/ElevationChart";
 import { ACTIVITY_COLORS, ACTIVITY_LABELS } from "../activity";
+import { NOTES_MAX_LENGTH } from "../constants";
 import type { ActivityType, HikeDetail } from "../types";
 
 function directionsUrl(lat: number, lon: number): string {
@@ -158,8 +159,17 @@ export function HikeDetailPage() {
             <label>
               Commentaires
               <br />
-              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
+              <textarea
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value.slice(0, NOTES_MAX_LENGTH) })}
+                maxLength={NOTES_MAX_LENGTH}
+                rows={4}
+              />
             </label>
+            <br />
+            <small>
+              {form.notes.length}/{NOTES_MAX_LENGTH} caractères
+            </small>
           </p>
           {saveError && <p style={{ color: "red" }}>{saveError}</p>}
           <p>
@@ -188,13 +198,6 @@ export function HikeDetailPage() {
             {hike.difficulty && <li>Difficulté : {hike.difficulty}</li>}
             {hike.duration_hint && <li>Durée estimée : {hike.duration_hint}</li>}
           </ul>
-
-          {hike.notes && (
-            <>
-              <h3>Commentaires</h3>
-              <p>{hike.notes}</p>
-            </>
-          )}
 
           {hike.start_lat != null && hike.start_lon != null && (
             <p>
@@ -233,6 +236,17 @@ export function HikeDetailPage() {
           </li>
         ))}
       </ul>
+
+      <h3>Commentaires</h3>
+      {hike.notes ? (
+        <p>{hike.notes}</p>
+      ) : (
+        <p>
+          <em>
+            Aucun commentaire pour l'instant ({NOTES_MAX_LENGTH} caractères max, via le bouton "Modifier").
+          </em>
+        </p>
+      )}
 
       {!editing && (
         <p>

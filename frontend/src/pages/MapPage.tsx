@@ -1,26 +1,31 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, Marker, Polyline, Popup } from "react-leaflet";
 import { Link } from "react-router-dom";
 import { getHikes } from "../api";
 import { BaseLayers } from "../components/IgnLayers";
+import { HikeFilters } from "../components/HikeFilters";
+import { useHikeFilters } from "../filters";
 import { ACTIVITY_COLORS, ACTIVITY_LABELS } from "../activity";
-import type { ActivityType, HikeSummary } from "../types";
-
-type Filter = "all" | ActivityType;
+import type { HikeSummary } from "../types";
 
 export function MapPage() {
   const [hikes, setHikes] = useState<HikeSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>("all");
+  const {
+    filtered,
+    activity,
+    setActivity,
+    minDistance,
+    setMinDistance,
+    maxDistance,
+    setMaxDistance,
+    distanceBoundMax,
+  } = useHikeFilters(hikes);
 
   useEffect(() => {
     getHikes().then(setHikes).catch((e) => setError(e.message));
   }, []);
 
-  const filtered = useMemo(
-    () => hikes.filter((h) => filter === "all" || h.activity_type === filter),
-    [hikes, filter]
-  );
   const withCoords = filtered.filter((h) => h.start_lat != null && h.start_lon != null);
 
   return (
@@ -30,19 +35,15 @@ export function MapPage() {
         {error ? ` — erreur: ${error}` : ""}.
       </p>
 
-      <div style={{ marginBottom: 8 }}>
-        <label style={{ marginRight: 12 }}>
-          <input type="radio" checked={filter === "all"} onChange={() => setFilter("all")} /> Toutes
-        </label>
-        <label style={{ marginRight: 12 }}>
-          <input type="radio" checked={filter === "rando"} onChange={() => setFilter("rando")} />{" "}
-          <span style={{ color: ACTIVITY_COLORS.rando }}>■</span> {ACTIVITY_LABELS.rando}
-        </label>
-        <label>
-          <input type="radio" checked={filter === "velo"} onChange={() => setFilter("velo")} />{" "}
-          <span style={{ color: ACTIVITY_COLORS.velo }}>■</span> {ACTIVITY_LABELS.velo}
-        </label>
-      </div>
+      <HikeFilters
+        activity={activity}
+        setActivity={setActivity}
+        minDistance={minDistance}
+        setMinDistance={setMinDistance}
+        maxDistance={maxDistance}
+        setMaxDistance={setMaxDistance}
+        distanceBoundMax={distanceBoundMax}
+      />
 
       <MapContainer center={[46.6, 2.4]} zoom={6} style={{ height: "70vh", width: "100%" }}>
         <BaseLayers />

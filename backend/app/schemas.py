@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+
+NOTES_MAX_LENGTH = 2000
 
 
 class ExternalLinkBase(BaseModel):
@@ -60,7 +62,7 @@ class HikeCreate(BaseModel):
 class HikeUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
-    notes: str | None = None
+    notes: str | None = Field(default=None, max_length=NOTES_MAX_LENGTH)
     difficulty: str | None = None
     duration_hint: str | None = None
     activity_type: str | None = None
