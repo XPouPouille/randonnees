@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 from app.auth import require_admin
 from app.database import get_db
@@ -11,9 +11,15 @@ router = APIRouter(prefix="/api/hikes", tags=["hikes"])
 
 
 @router.get("", response_model=list[HikeSummary])
-def list_hikes(db: Session = Depends(get_db)):
-    hikes = db.query(Hike).order_by(Hike.name).all()
-    return [hike_to_summary(h) for h in hikes]
+def list_hikes(include_track: bool = False, db: Session = Depends(get_db)):
+    query = db.query(Hike).order_by(Hike.name)
+    if not include_track:
+        # Évite de charger/sérialiser la géométrie (potentiellement volumineuse
+        # pour des centaines de randonnées) quand l'appelant ne l'affiche pas,
+        # ex. la page Liste.
+        query = query.options(defer(Hike.geom))
+    hikes = query.all()
+    return [hike_to_summary(h, include_track=include_track) for h in hikes]
 
 
 @router.get("/{hike_id}", response_model=HikeOut)

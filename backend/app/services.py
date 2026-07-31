@@ -14,7 +14,7 @@ from app.schemas import HikeOut, HikeSummary
 # Tolérance de simplification (degrés) appliquée à la trace pour la vue
 # d'ensemble sur la carte liste : garde la forme visible sans envoyer chaque
 # point GPS brut pour des centaines de randonnées à la fois.
-LIST_SIMPLIFY_TOLERANCE = 0.0008
+LIST_SIMPLIFY_TOLERANCE = 0.002
 
 IGN_ELEVATION_URL = "https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json"
 IGN_ITINERAIRE_URL = "https://data.geopf.fr/navigation/itineraire"
@@ -31,9 +31,13 @@ def hike_to_out(hike: Hike) -> HikeOut:
     return HikeOut.model_validate(data)
 
 
-def hike_to_summary(hike: Hike) -> HikeSummary:
+def hike_to_summary(hike: Hike, include_track: bool = True) -> HikeSummary:
     data = HikeSummary.model_validate(hike, from_attributes=True).model_dump()
-    if hike.geom is not None:
+    # hike.geom n'est volontairement pas chargé (defer) quand include_track
+    # est faux (page Liste) : le payload de /api/hikes atteignait 1.5 Mo pour
+    # ~300 randonnées, largement suffisant pour faire échouer le fetch sur
+    # une connexion mobile lente, alors que la liste n'affiche aucune trace.
+    if include_track and hike.geom is not None:
         shape = to_shape(hike.geom).simplify(LIST_SIMPLIFY_TOLERANCE, preserve_topology=False)
         data["track_geojson"] = mapping(shape)
     return HikeSummary.model_validate(data)

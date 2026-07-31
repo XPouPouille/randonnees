@@ -23,7 +23,7 @@ export function MapPage() {
   } = useHikeFilters(hikes);
 
   useEffect(() => {
-    getHikes().then(setHikes).catch((e) => setError(e.message));
+    getHikes(true).then(setHikes).catch((e) => setError(e.message));
   }, []);
 
   const withCoords = filtered.filter((h) => h.start_lat != null && h.start_lon != null);

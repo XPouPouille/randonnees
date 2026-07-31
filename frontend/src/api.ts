@@ -24,8 +24,8 @@ async function handle<T>(res: Response): Promise<T> {
   return res.json();
 }
 
-export function getHikes(): Promise<HikeSummary[]> {
-  return fetch(`${API_BASE}/hikes`).then((r) => handle(r));
+export function getHikes(includeTrack = false): Promise<HikeSummary[]> {
+  return fetch(`${API_BASE}/hikes?include_track=${includeTrack}`).then((r) => handle(r));
 }
 
 export function getHike(id: number): Promise<HikeDetail> {
