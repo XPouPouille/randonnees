@@ -24,15 +24,18 @@ itinéraires de randonnée.
   point par point sur fond de carte IGN (bascule plan / photos aériennes /
   carte topo avec courbes de niveau), sélection d'un point pour insérer un
   nouveau point avant ou après lui, suppression de point, aperçu du profil
-  altimétrique (service altimétrie IGN, sans clé) avant d'enregistrer.
+  altimétrique (service altimétrie IGN, sans clé) avant d'enregistrer, le
+  tracé final suivant toujours les routes/chemins (service d'itinéraire IGN).
+- **Points d'intérêt le long du tracé** (à la manière d'OnRouteMap) : recherche
+  par rayon et catégorie (supermarché, boulangerie, eau potable, camping,
+  refuge, réparation vélo...) via OpenStreetMap/Overpass, POI ajoutés comme
+  waypoints du GPX enregistré.
 - Import initial depuis un fichier Excel de liens existants, ou import en
   masse de traces GPX complètes depuis un export "Recto Verso".
 
-### Feuille de route (V2.1+)
+### Feuille de route (V2.2+)
 
 - Découpe et collage de segments de trace existants.
-- Ajout de points d'intérêt (POI) le long d'un parcours, à la manière
-  d'OnRouteMap.
 - Comptes utilisateurs multiples (au lieu du token admin unique du MVP).
 
 ## Architecture

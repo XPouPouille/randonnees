@@ -6,10 +6,15 @@ class GpxParseError(ValueError):
     pass
 
 
-def build_gpx_bytes(name: str, points: list[dict]) -> bytes:
+def build_gpx_bytes(name: str, points: list[dict], waypoints: list[dict] | None = None) -> bytes:
     """Construit un fichier GPX à partir de points {lat, lon, elevation_m}
     dessinés à la main sur la carte (éditeur de tracé), pour être ensuite
-    traité comme n'importe quel autre GPX via parse_gpx()."""
+    traité comme n'importe quel autre GPX via parse_gpx().
+
+    waypoints (optionnel) : points d'intérêt {lat, lon, name, category} à
+    ajouter comme <wpt> du GPX (à la manière d'OnRouteMap), sans influer sur
+    la trace/le calcul de distance-dénivelé (parse_gpx ignore les waypoints).
+    """
     gpx = gpxpy.gpx.GPX()
     gpx.name = name
     track = gpxpy.gpx.GPXTrack(name=name)
@@ -20,6 +25,15 @@ def build_gpx_bytes(name: str, points: list[dict]) -> bytes:
         segment.points.append(
             gpxpy.gpx.GPXTrackPoint(
                 latitude=point["lat"], longitude=point["lon"], elevation=point.get("elevation_m")
+            )
+        )
+    for wp in waypoints or []:
+        gpx.waypoints.append(
+            gpxpy.gpx.GPXWaypoint(
+                latitude=wp["lat"],
+                longitude=wp["lon"],
+                name=wp.get("name") or wp.get("category"),
+                description=wp.get("category"),
             )
         )
     return gpx.to_xml().encode("utf-8")

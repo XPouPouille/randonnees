@@ -83,6 +83,13 @@ class ElevationPointOut(BaseModel):
     elevation_m: float
 
 
+class PoiOut(BaseModel):
+    lat: float
+    lon: float
+    name: str | None = None
+    category: str
+
+
 class DrawHikeCreate(BaseModel):
     name: str
     activity_type: str = "rando"
@@ -90,8 +97,15 @@ class DrawHikeCreate(BaseModel):
     duration_hint: str | None = None
     description: str | None = None
     points: list[LatLon]
+    pois: list[PoiOut] = []
 
 
 class RouteRequest(BaseModel):
     points: list[LatLon]
     activity_type: str = "rando"
+
+
+class PoiRequest(BaseModel):
+    points: list[LatLon]
+    radius_m: int = Field(default=1000, ge=50, le=5000)
+    categories: list[str]

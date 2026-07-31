@@ -128,3 +128,110 @@ def fetch_route(points: list[tuple[float, float]], activity_type: str) -> list[t
         return [(lat, lon) for lon, lat in coords]
     except (requests.RequestException, KeyError, ValueError, TypeError):
         return points
+
+
+# Points d'intérêt à la manière d'OnRouteMap (onroutemap.de), qui puise ses
+# données dans OpenStreetMap : mêmes catégories, même source, via l'API
+# Overpass (publique, gratuite, sans clé). Chaque catégorie est une liste de
+# tags OSM (clé, valeur) ; un POI est retenu s'il correspond à l'un d'eux.
+# Deux instances publiques essayées dans l'ordre : l'officielle peut être
+# lente/saturée aux heures de pointe (constaté : 6-10s, parfois 504).
+OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+]
+OVERPASS_USER_AGENT = "randonnees-app/1.0 (+https://github.com/XPouPouille/randonnees)"
+OVERPASS_TIMEOUT = 45
+OVERPASS_QUERY_TIMEOUT = 40
+
+POI_CATEGORIES: dict[str, list[tuple[str, str]]] = {
+    "supermarket": [("shop", "supermarket")],
+    "gas_station": [("amenity", "fuel")],
+    "bakery": [("shop", "bakery")],
+    "cafe": [("amenity", "cafe")],
+    "ice_cream": [("amenity", "ice_cream")],
+    "drinking_water": [("amenity", "drinking_water")],
+    "beverages": [("shop", "beverages")],
+    "cemetery": [("amenity", "grave_yard"), ("landuse", "cemetery")],
+    "kiosk": [("shop", "kiosk")],
+    "vending_machine": [("amenity", "vending_machine")],
+    "toilets": [("amenity", "toilets")],
+    "fast_food": [("amenity", "fast_food")],
+    "restaurant": [("amenity", "restaurant")],
+    "mountain_hut": [("tourism", "alpine_hut")],
+    "bicycle_service": [("shop", "bicycle"), ("amenity", "bicycle_repair_station")],
+    "hotel": [("tourism", "hotel"), ("tourism", "guest_house")],
+    "camp_site": [("tourism", "camp_site")],
+    "shelter": [("amenity", "shelter")],
+}
+
+# Nombre de points de la trace conservés pour la requête Overpass (around
+# accepte une liste de coordonnées) : on sous-échantillonne les tracés
+# routés très détaillés pour garder une requête raisonnable.
+POI_ROUTE_SAMPLE_MAX = 150
+POI_RESULT_LIMIT = 300
+
+
+def _sample_points(points: list[tuple[float, float]], max_points: int) -> list[tuple[float, float]]:
+    if len(points) <= max_points:
+        return points
+    step = len(points) / max_points
+    return [points[int(i * step)] for i in range(max_points)]
+
+
+def _match_category(tags: dict, categories: list[str]) -> str | None:
+    for category in categories:
+        for key, value in POI_CATEGORIES.get(category, []):
+            if tags.get(key) == value:
+                return category
+    return None
+
+
+def fetch_poi(points: list[tuple[float, float]], radius_m: int, categories: list[str]) -> list[dict]:
+    """Cherche les points d'intérêt OpenStreetMap (via Overpass) le long
+    d'un tracé, dans un rayon donné, pour les catégories demandées."""
+    valid_categories = [c for c in categories if c in POI_CATEGORIES]
+    if not points or not valid_categories:
+        return []
+
+    sample = _sample_points(points, POI_ROUTE_SAMPLE_MAX)
+    around = ",".join(f"{lat},{lon}" for lat, lon in sample)
+
+    blocks = []
+    for category in valid_categories:
+        for key, value in POI_CATEGORIES[category]:
+            blocks.append(f'node["{key}"="{value}"](around:{radius_m},{around});')
+    query = (
+        f"[out:json][timeout:{OVERPASS_QUERY_TIMEOUT}];"
+        f"({''.join(blocks)});out center {POI_RESULT_LIMIT};"
+    )
+
+    resp = None
+    last_exc: requests.RequestException | None = None
+    for url in OVERPASS_URLS:
+        try:
+            resp = requests.post(
+                url, data={"data": query}, timeout=OVERPASS_TIMEOUT, headers={"User-Agent": OVERPASS_USER_AGENT}
+            )
+            resp.raise_for_status()
+            last_exc = None
+            break
+        except requests.RequestException as exc:
+            last_exc = exc
+            resp = None
+    if resp is None:
+        raise last_exc
+    elements = resp.json().get("elements", [])
+
+    results = []
+    for el in elements:
+        lat = el.get("lat") or el.get("center", {}).get("lat")
+        lon = el.get("lon") or el.get("center", {}).get("lon")
+        if lat is None or lon is None:
+            continue
+        tags = el.get("tags", {})
+        category = _match_category(tags, valid_categories)
+        if category is None:
+            continue
+        results.append({"lat": lat, "lon": lon, "name": tags.get("name"), "category": category})
+    return results

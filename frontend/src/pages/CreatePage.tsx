@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleMarker, MapContainer, Polyline, Tooltip, useMapEvents } from "react-leaflet";
+import { CircleMarker, MapContainer, Polyline, Popup, Tooltip, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
-import { createDrawnHike, getElevationProfile, getRoute } from "../api";
+import { createDrawnHike, getElevationProfile, getPoi, getRoute } from "../api";
 import { BaseLayers } from "../components/IgnLayers";
 import { ElevationChart } from "../components/ElevationChart";
 import { ACTIVITY_COLORS } from "../activity";
+import { DEFAULT_POI_CATEGORIES, POI_CATEGORIES, POI_LABELS } from "../poi";
 import { haversineKm, type LatLon } from "../geo";
-import type { ActivityType, ElevationResultPoint } from "../types";
+import type { ActivityType, ElevationResultPoint, PoiResult } from "../types";
+
+const POI_COLOR = "#e07b00";
 
 type InsertMode = "append" | "before" | "after";
 
@@ -38,6 +41,11 @@ export function CreatePage() {
 
   const [routedPath, setRoutedPath] = useState<LatLon[] | null>(null);
   const [routing, setRouting] = useState(false);
+
+  const [poiRadius, setPoiRadius] = useState(1000);
+  const [poiCategories, setPoiCategories] = useState<Set<string>>(new Set(DEFAULT_POI_CATEGORIES));
+  const [pois, setPois] = useState<PoiResult[]>([]);
+  const [poiLoading, setPoiLoading] = useState(false);
 
   const color = ACTIVITY_COLORS[activityType];
   const straightLine = useMemo(() => points.map((p) => [p.lat, p.lon] as [number, number]), [points]);
@@ -116,6 +124,34 @@ export function CreatePage() {
     }
   }
 
+  function toggleCategory(key: string) {
+    setPoiCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  async function handleSearchPoi() {
+    if (points.length < 1 || poiCategories.size === 0) return;
+    setPoiLoading(true);
+    setError(null);
+    try {
+      const path = routedPath && routedPath.length >= 2 ? routedPath : points;
+      const result = await getPoi(path, poiRadius, Array.from(poiCategories));
+      setPois(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setPoiLoading(false);
+    }
+  }
+
+  function removePoi(index: number) {
+    setPois((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSave() {
     if (!name.trim() || points.length < 2) return;
     localStorage.setItem("admin_token", adminToken);
@@ -128,6 +164,7 @@ export function CreatePage() {
         difficulty: difficulty || null,
         description: description || null,
         points,
+        pois,
       });
       navigate(`/hikes/${hike.id}`);
     } catch (err) {
@@ -246,6 +283,24 @@ export function CreatePage() {
             <Tooltip>#{i + 1}</Tooltip>
           </CircleMarker>
         ))}
+        {pois.map((poi, i) => (
+          <CircleMarker
+            key={`poi-${i}`}
+            center={[poi.lat, poi.lon]}
+            radius={5}
+            pathOptions={{ color: POI_COLOR, fillColor: POI_COLOR, fillOpacity: 1 }}
+          >
+            <Popup>
+              <strong>{poi.name || POI_LABELS[poi.category] || poi.category}</strong>
+              <br />
+              {POI_LABELS[poi.category] || poi.category}
+              <br />
+              <button type="button" onClick={() => removePoi(i)}>
+                Retirer
+              </button>
+            </Popup>
+          </CircleMarker>
+        ))}
       </MapContainer>
 
       <h3>Points ({points.length})</h3>
@@ -291,6 +346,50 @@ export function CreatePage() {
           </tbody>
         </table>
       )}
+
+      <div style={{ marginBottom: 8, padding: 8, border: "1px solid #ddd", borderRadius: 6 }}>
+        <strong>Points d'intérêt</strong> — recherche façon OnRouteMap (données OpenStreetMap) le long du tracé.
+        <br />
+        <label>
+          Rayon de recherche : {poiRadius} m
+          <br />
+          <input
+            type="range"
+            min={100}
+            max={3000}
+            step={100}
+            value={poiRadius}
+            onChange={(e) => setPoiRadius(Number(e.target.value))}
+          />
+        </label>
+        <div style={{ margin: "8px 0" }}>
+          {POI_CATEGORIES.map((c) => (
+            <label key={c.key} style={{ display: "inline-block", width: 220 }}>
+              <input
+                type="checkbox"
+                checked={poiCategories.has(c.key)}
+                onChange={() => toggleCategory(c.key)}
+              />{" "}
+              {c.label}
+            </label>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={handleSearchPoi}
+          disabled={points.length < 1 || poiCategories.size === 0 || poiLoading}
+        >
+          {poiLoading ? "Recherche…" : "Rechercher les points d'intérêt"}
+        </button>{" "}
+        {pois.length > 0 && (
+          <>
+            {pois.length} trouvé(s).{" "}
+            <button type="button" onClick={() => setPois([])}>
+              Tout retirer
+            </button>
+          </>
+        )}
+      </div>
 
       <p>
         <button type="button" onClick={handlePreview} disabled={points.length < 2 || profileLoading}>

@@ -5,6 +5,7 @@ import type {
   HikeDetail,
   HikeSummary,
   HikeUpdatePayload,
+  PoiResult,
 } from "./types";
 import type { LatLon } from "./geo";
 
@@ -94,5 +95,13 @@ export function getRoute(points: LatLon[], activityType: ActivityType): Promise<
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ points, activity_type: activityType }),
+  }).then((r) => handle(r));
+}
+
+export function getPoi(points: LatLon[], radiusM: number, categories: string[]): Promise<PoiResult[]> {
+  return fetch(`${API_BASE}/poi`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ points, radius_m: radiusM, categories }),
   }).then((r) => handle(r));
 }

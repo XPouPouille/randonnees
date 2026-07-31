@@ -52,6 +52,13 @@ export interface ElevationResultPoint {
   elevation_m: number;
 }
 
+export interface PoiResult {
+  lat: number;
+  lon: number;
+  name?: string | null;
+  category: string;
+}
+
 export interface DrawHikePayload {
   name: string;
   activity_type: ActivityType;
@@ -59,4 +66,5 @@ export interface DrawHikePayload {
   duration_hint?: string | null;
   description?: string | null;
   points: { lat: number; lon: number }[];
+  pois?: PoiResult[];
 }
