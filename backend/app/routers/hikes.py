@@ -12,11 +12,12 @@ router = APIRouter(prefix="/api/hikes", tags=["hikes"])
 
 @router.get("", response_model=list[HikeSummary])
 def list_hikes(include_track: bool = False, db: Session = Depends(get_db)):
-    query = db.query(Hike).order_by(Hike.name)
+    # HikeSummary n'expose jamais elevation_profile (mesuré : 77 Mo cumulés
+    # pour ~300 randonnées, jusqu'à 1.5 Mo pour une seule) : le déférer évite
+    # de le charger/désérialiser depuis Postgres pour rien à chaque appel.
+    query = db.query(Hike).order_by(Hike.name).options(defer(Hike.elevation_profile))
     if not include_track:
-        # Évite de charger/sérialiser la géométrie (potentiellement volumineuse
-        # pour des centaines de randonnées) quand l'appelant ne l'affiche pas,
-        # ex. la page Liste.
+        # Idem pour la géométrie quand l'appelant ne l'affiche pas (page Liste).
         query = query.options(defer(Hike.geom))
     hikes = query.all()
     return [hike_to_summary(h, include_track=include_track) for h in hikes]
