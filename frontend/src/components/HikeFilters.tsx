@@ -20,6 +20,8 @@ export function HikeFilters({
   setMaxDistance,
   distanceBoundMax,
 }: Props) {
+  const displayMax = Number.isFinite(maxDistance) ? maxDistance : distanceBoundMax;
+
   return (
     <div style={{ marginBottom: 12, padding: 8, border: "1px solid #ddd", borderRadius: 6 }}>
       <div style={{ marginBottom: 8 }}>
@@ -37,7 +39,7 @@ export function HikeFilters({
       </div>
 
       <div>
-        Distance : {minDistance} – {maxDistance} km
+        Distance : {minDistance} – {displayMax} km
         <br />
         <label>
           Min{" "}
@@ -46,7 +48,7 @@ export function HikeFilters({
             min={0}
             max={distanceBoundMax}
             value={minDistance}
-            onChange={(e) => setMinDistance(Math.min(Number(e.target.value), maxDistance))}
+            onChange={(e) => setMinDistance(Math.min(Number(e.target.value), displayMax))}
           />
         </label>
         <br />
@@ -56,7 +58,7 @@ export function HikeFilters({
             type="range"
             min={0}
             max={distanceBoundMax}
-            value={maxDistance}
+            value={displayMax}
             onChange={(e) => setMaxDistance(Math.max(Number(e.target.value), minDistance))}
           />
         </label>
