@@ -45,3 +45,18 @@ export interface HikeUpdatePayload {
   duration_hint?: string | null;
   activity_type?: ActivityType;
 }
+
+export interface ElevationResultPoint {
+  lat: number;
+  lon: number;
+  elevation_m: number;
+}
+
+export interface DrawHikePayload {
+  name: string;
+  activity_type: ActivityType;
+  difficulty?: string | null;
+  duration_hint?: string | null;
+  description?: string | null;
+  points: { lat: number; lon: number }[];
+}

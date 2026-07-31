@@ -5,22 +5,32 @@ itinéraires de randonnée.
 
 ## Fonctionnalités
 
-- **Carte interactive** affichant toutes les randonnées de la base (fond de
-  carte OpenStreetMap ou IGN : plan, photos aériennes, cartes topo SCAN).
+- **Carte interactive** affichant la trace complète de chaque randonnée
+  (fond de carte OpenStreetMap ou IGN : plan, photos aériennes, cartes topo
+  SCAN avec courbes de niveau), colorée par catégorie (vert = rando, bleu =
+  vélo), avec filtres catégorie + distance (min/max).
+- **Page Liste** : tableau de toutes les randonnées avec les mêmes filtres,
+  lien vers chaque fiche détail.
 - **Fiche détail** par randonnée : description, distance, dénivelé,
   **profil topologique** (graphique altitude / distance), trace GPX affichée
-  sur la carte.
+  sur la carte, section commentaires, édition en place (catégorie,
+  difficulté, durée, description, commentaires) via un token admin.
 - **Liens externes multiples** par randonnée (Komoot, AllTrails, Garmin
   Connect, Visorando, ou tout autre site), ajoutables manuellement ou en
   masse depuis un fichier Excel.
 - **Itinéraire vers le point de départ** : un clic ouvre Google Maps en mode
   conduite jusqu'au point de départ de la randonnée sélectionnée.
-- Import initial depuis un fichier Excel de liens existants.
+- **Éditeur de tracé** (page "Créer un tracé") : construction d'un itinéraire
+  point par point sur fond de carte IGN (bascule plan / photos aériennes /
+  carte topo avec courbes de niveau), sélection d'un point pour insérer un
+  nouveau point avant ou après lui, suppression de point, aperçu du profil
+  altimétrique (service altimétrie IGN, sans clé) avant d'enregistrer.
+- Import initial depuis un fichier Excel de liens existants, ou import en
+  masse de traces GPX complètes depuis un export "Recto Verso".
 
-### Feuille de route (V2)
+### Feuille de route (V2.1+)
 
-- Éditeur de tracé GPX directement sur fond de carte IGN : dessin, ajout de
-  point intermédiaire, découpe et collage de segments de trace.
+- Découpe et collage de segments de trace existants.
 - Ajout de points d'intérêt (POI) le long d'un parcours, à la manière
   d'OnRouteMap.
 - Comptes utilisateurs multiples (au lieu du token admin unique du MVP).

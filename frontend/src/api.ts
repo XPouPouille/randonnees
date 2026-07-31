@@ -1,4 +1,5 @@
-import type { HikeDetail, HikeSummary, HikeUpdatePayload } from "./types";
+import type { DrawHikePayload, ElevationResultPoint, HikeDetail, HikeSummary, HikeUpdatePayload } from "./types";
+import type { LatLon } from "./geo";
 
 const API_BASE = "/api";
 
@@ -62,5 +63,21 @@ export function deleteLink(linkId: number): Promise<void> {
   return fetch(`${API_BASE}/links/${linkId}`, {
     method: "DELETE",
     headers: adminHeaders(),
+  }).then((r) => handle(r));
+}
+
+export function getElevationProfile(points: LatLon[]): Promise<ElevationResultPoint[]> {
+  return fetch(`${API_BASE}/elevation`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ points }),
+  }).then((r) => handle(r));
+}
+
+export function createDrawnHike(payload: DrawHikePayload): Promise<HikeDetail> {
+  return fetch(`${API_BASE}/hikes/draw`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...adminHeaders() },
+    body: JSON.stringify(payload),
   }).then((r) => handle(r));
 }

@@ -66,3 +66,27 @@ class HikeUpdate(BaseModel):
     difficulty: str | None = None
     duration_hint: str | None = None
     activity_type: str | None = None
+
+
+class LatLon(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+
+
+class ElevationRequest(BaseModel):
+    points: list[LatLon]
+
+
+class ElevationPointOut(BaseModel):
+    lat: float
+    lon: float
+    elevation_m: float
+
+
+class DrawHikeCreate(BaseModel):
+    name: str
+    activity_type: str = "rando"
+    difficulty: str | None = None
+    duration_hint: str | None = None
+    description: str | None = None
+    points: list[LatLon]

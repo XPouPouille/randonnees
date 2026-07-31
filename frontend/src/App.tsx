@@ -3,6 +3,7 @@ import { MapPage } from "./pages/MapPage";
 import { ListPage } from "./pages/ListPage";
 import { HikeDetailPage } from "./pages/HikeDetailPage";
 import { AddHikePage } from "./pages/AddHikePage";
+import { CreatePage } from "./pages/CreatePage";
 
 export function App() {
   return (
@@ -12,7 +13,8 @@ export function App() {
           <Link to="/">🥾 Randonnées</Link>
         </h1>
         <nav>
-          <Link to="/">Carte</Link> · <Link to="/liste">Liste</Link> · <Link to="/add">Ajouter une randonnée</Link>
+          <Link to="/">Carte</Link> · <Link to="/liste">Liste</Link> · <Link to="/add">Ajouter une randonnée</Link> ·{" "}
+          <Link to="/creer">Créer un tracé</Link>
         </nav>
       </header>
       <main>
@@ -21,6 +23,7 @@ export function App() {
           <Route path="/liste" element={<ListPage />} />
           <Route path="/hikes/:id" element={<HikeDetailPage />} />
           <Route path="/add" element={<AddHikePage />} />
+          <Route path="/creer" element={<CreatePage />} />
         </Routes>
       </main>
     </div>

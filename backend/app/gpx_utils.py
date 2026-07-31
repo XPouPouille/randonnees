@@ -1,8 +1,28 @@
 import gpxpy
+import gpxpy.gpx
 
 
 class GpxParseError(ValueError):
     pass
+
+
+def build_gpx_bytes(name: str, points: list[dict]) -> bytes:
+    """Construit un fichier GPX à partir de points {lat, lon, elevation_m}
+    dessinés à la main sur la carte (éditeur de tracé), pour être ensuite
+    traité comme n'importe quel autre GPX via parse_gpx()."""
+    gpx = gpxpy.gpx.GPX()
+    gpx.name = name
+    track = gpxpy.gpx.GPXTrack(name=name)
+    gpx.tracks.append(track)
+    segment = gpxpy.gpx.GPXTrackSegment()
+    track.segments.append(segment)
+    for point in points:
+        segment.points.append(
+            gpxpy.gpx.GPXTrackPoint(
+                latitude=point["lat"], longitude=point["lon"], elevation=point.get("elevation_m")
+            )
+        )
+    return gpx.to_xml().encode("utf-8")
 
 
 def parse_gpx(raw_bytes: bytes) -> dict:
