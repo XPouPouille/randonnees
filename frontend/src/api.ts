@@ -1,4 +1,4 @@
-import type { HikeDetail, HikeSummary } from "./types";
+import type { HikeDetail, HikeSummary, HikeUpdatePayload } from "./types";
 
 const API_BASE = "/api";
 
@@ -29,6 +29,14 @@ export function createHike(formData: FormData): Promise<HikeDetail> {
     method: "POST",
     headers: adminHeaders(),
     body: formData,
+  }).then((r) => handle(r));
+}
+
+export function updateHike(id: number, payload: HikeUpdatePayload): Promise<HikeDetail> {
+  return fetch(`${API_BASE}/hikes/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...adminHeaders() },
+    body: JSON.stringify(payload),
   }).then((r) => handle(r));
 }
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { addLink, createHike } from "../api";
+import type { ActivityType } from "../types";
 
 interface LinkRow {
   platform: string;
@@ -14,6 +15,7 @@ export function AddHikePage() {
   const navigate = useNavigate();
   const [adminToken, setAdminToken] = useState(localStorage.getItem("admin_token") || "");
   const [name, setName] = useState("");
+  const [activityType, setActivityType] = useState<ActivityType>("rando");
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState("");
   const [durationHint, setDurationHint] = useState("");
@@ -41,6 +43,7 @@ export function AddHikePage() {
 
     const formData = new FormData();
     formData.set("name", name);
+    formData.set("activity_type", activityType);
     if (description) formData.set("description", description);
     if (difficulty) formData.set("difficulty", difficulty);
     if (durationHint) formData.set("duration_hint", durationHint);
@@ -87,6 +90,17 @@ export function AddHikePage() {
             Description
             <br />
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+          </label>
+        </p>
+
+        <p>
+          <label>
+            Catégorie
+            <br />
+            <select value={activityType} onChange={(e) => setActivityType(e.target.value as ActivityType)}>
+              <option value="rando">Rando</option>
+              <option value="velo">Vélo</option>
+            </select>
           </label>
         </p>
 

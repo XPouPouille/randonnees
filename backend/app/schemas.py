@@ -29,22 +29,24 @@ class HikeSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
+    activity_type: str
     difficulty: str | None
     duration_hint: str | None
     distance_km: float | None
     elevation_gain_m: float | None
     start_lat: float | None
     start_lon: float | None
+    track_geojson: dict | None = None
 
 
 class HikeOut(HikeSummary):
     description: str | None
+    notes: str | None
     elevation_loss_m: float | None
     elevation_profile: list[ElevationPoint] | None
     gpx_filename: str | None
     created_at: datetime
     links: list[ExternalLinkOut] = []
-    track_geojson: dict | None = None
 
 
 class HikeCreate(BaseModel):
@@ -52,10 +54,13 @@ class HikeCreate(BaseModel):
     description: str | None = None
     difficulty: str | None = None
     duration_hint: str | None = None
+    activity_type: str = "rando"
 
 
 class HikeUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    notes: str | None = None
     difficulty: str | None = None
     duration_hint: str | None = None
+    activity_type: str | None = None

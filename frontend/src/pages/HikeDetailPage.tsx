@@ -1,13 +1,34 @@
 import { useEffect, useState } from "react";
 import { MapContainer, Marker, Polyline } from "react-leaflet";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { deleteHike, getHike } from "../api";
+import { deleteHike, getHike, updateHike } from "../api";
 import { BaseLayers } from "../components/IgnLayers";
 import { ElevationChart } from "../components/ElevationChart";
-import type { HikeDetail } from "../types";
+import { ACTIVITY_COLORS, ACTIVITY_LABELS } from "../activity";
+import type { ActivityType, HikeDetail } from "../types";
 
 function directionsUrl(lat: number, lon: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
+}
+
+interface EditForm {
+  name: string;
+  description: string;
+  notes: string;
+  difficulty: string;
+  duration_hint: string;
+  activity_type: ActivityType;
+}
+
+function toEditForm(hike: HikeDetail): EditForm {
+  return {
+    name: hike.name,
+    description: hike.description || "",
+    notes: hike.notes || "",
+    difficulty: hike.difficulty || "",
+    duration_hint: hike.duration_hint || "",
+    activity_type: hike.activity_type,
+  };
 }
 
 export function HikeDetailPage() {
@@ -15,6 +36,11 @@ export function HikeDetailPage() {
   const navigate = useNavigate();
   const [hike, setHike] = useState<HikeDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [adminToken, setAdminToken] = useState(localStorage.getItem("admin_token") || "");
+  const [form, setForm] = useState<EditForm | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -34,33 +60,155 @@ export function HikeDetailPage() {
     navigate("/");
   }
 
+  function startEditing() {
+    setForm(toEditForm(hike!));
+    setSaveError(null);
+    setEditing(true);
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form || !hike) return;
+    localStorage.setItem("admin_token", adminToken);
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const updated = await updateHike(hike.id, {
+        name: form.name,
+        description: form.description || null,
+        notes: form.notes || null,
+        difficulty: form.difficulty || null,
+        duration_hint: form.duration_hint || null,
+        activity_type: form.activity_type,
+      });
+      setHike(updated);
+      setEditing(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div>
       <p>
         <Link to="/">← Retour à la carte</Link>
       </p>
-      <h2>{hike.name}</h2>
-      {hike.description && <p>{hike.description}</p>}
 
-      <ul>
-        {hike.distance_km != null && <li>Distance : {hike.distance_km} km</li>}
-        {hike.elevation_gain_m != null && <li>Dénivelé positif : +{Math.round(hike.elevation_gain_m)} m</li>}
-        {hike.elevation_loss_m != null && <li>Dénivelé négatif : -{Math.round(hike.elevation_loss_m)} m</li>}
-        {hike.difficulty && <li>Difficulté : {hike.difficulty}</li>}
-        {hike.duration_hint && <li>Durée estimée : {hike.duration_hint}</li>}
-      </ul>
+      {editing && form ? (
+        <form onSubmit={handleSave}>
+          <h2>Modifier la randonnée</h2>
+          <p>
+            <label>
+              Token admin
+              <br />
+              <input type="password" value={adminToken} onChange={(e) => setAdminToken(e.target.value)} required />
+            </label>
+          </p>
+          <p>
+            <label>
+              Nom
+              <br />
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            </label>
+          </p>
+          <p>
+            <label>
+              Catégorie
+              <br />
+              <select
+                value={form.activity_type}
+                onChange={(e) => setForm({ ...form, activity_type: e.target.value as ActivityType })}
+              >
+                <option value="rando">Rando</option>
+                <option value="velo">Vélo</option>
+              </select>
+            </label>
+          </p>
+          <p>
+            <label>
+              Difficulté
+              <br />
+              <input value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value })} />
+            </label>
+          </p>
+          <p>
+            <label>
+              Durée estimée
+              <br />
+              <input
+                value={form.duration_hint}
+                onChange={(e) => setForm({ ...form, duration_hint: e.target.value })}
+              />
+            </label>
+          </p>
+          <p>
+            <label>
+              Description
+              <br />
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={3}
+              />
+            </label>
+          </p>
+          <p>
+            <label>
+              Commentaires
+              <br />
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
+            </label>
+          </p>
+          {saveError && <p style={{ color: "red" }}>{saveError}</p>}
+          <p>
+            <button type="submit" disabled={saving}>
+              {saving ? "Enregistrement…" : "Enregistrer"}
+            </button>{" "}
+            <button type="button" onClick={() => setEditing(false)}>
+              Annuler
+            </button>
+          </p>
+        </form>
+      ) : (
+        <>
+          <h2>
+            {hike.name}{" "}
+            <span style={{ fontSize: "0.6em", color: ACTIVITY_COLORS[hike.activity_type] }}>
+              ■ {ACTIVITY_LABELS[hike.activity_type]}
+            </span>
+          </h2>
+          {hike.description && <p>{hike.description}</p>}
 
-      {hike.start_lat != null && hike.start_lon != null && (
-        <p>
-          <a href={directionsUrl(hike.start_lat, hike.start_lon)} target="_blank" rel="noreferrer">
-            🚗 Itinéraire pour se rendre au point de départ
-          </a>
-        </p>
+          <ul>
+            {hike.distance_km != null && <li>Distance : {hike.distance_km} km</li>}
+            {hike.elevation_gain_m != null && <li>Dénivelé positif : +{Math.round(hike.elevation_gain_m)} m</li>}
+            {hike.elevation_loss_m != null && <li>Dénivelé négatif : -{Math.round(hike.elevation_loss_m)} m</li>}
+            {hike.difficulty && <li>Difficulté : {hike.difficulty}</li>}
+            {hike.duration_hint && <li>Durée estimée : {hike.duration_hint}</li>}
+          </ul>
+
+          {hike.notes && (
+            <>
+              <h3>Commentaires</h3>
+              <p>{hike.notes}</p>
+            </>
+          )}
+
+          {hike.start_lat != null && hike.start_lon != null && (
+            <p>
+              <a href={directionsUrl(hike.start_lat, hike.start_lon)} target="_blank" rel="noreferrer">
+                🚗 Itinéraire pour se rendre au point de départ
+              </a>
+            </p>
+          )}
+        </>
       )}
 
       <MapContainer center={center} zoom={13} style={{ height: "50vh", width: "100%" }}>
         <BaseLayers />
-        {coords && <Polyline positions={coords} pathOptions={{ color: "#d3242a", weight: 4 }} />}
+        {coords && <Polyline positions={coords} pathOptions={{ color: ACTIVITY_COLORS[hike.activity_type], weight: 4 }} />}
         {hike.start_lat != null && hike.start_lon != null && (
           <Marker position={[hike.start_lat, hike.start_lon]} />
         )}
@@ -86,9 +234,12 @@ export function HikeDetailPage() {
         ))}
       </ul>
 
-      <p>
-        <button onClick={handleDelete}>Supprimer cette randonnée</button>
-      </p>
+      {!editing && (
+        <p>
+          <button onClick={startEditing}>Modifier</button>{" "}
+          <button onClick={handleDelete}>Supprimer cette randonnée</button>
+        </p>
+      )}
     </div>
   );
 }

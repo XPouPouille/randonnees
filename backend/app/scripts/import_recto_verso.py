@@ -109,11 +109,12 @@ def build_description(row: dict) -> str | None:
 
 
 def build_name(row: dict, gpx_name: str | None) -> str:
-    name = row["nom"] or gpx_name or f"Randonnée {row['ref'] or row['lien']}"
+    return row["nom"] or gpx_name or f"Randonnée {row['ref'] or row['lien']}"
+
+
+def build_activity_type(row: dict) -> str:
     ref = row["ref"] or ""
-    if ref.upper().startswith("V."):
-        name = f"[Vélo] {name}"
-    return name
+    return "velo" if ref.upper().startswith("V.") else "rando"
 
 
 def run(xlsx_path: str, dry_run: bool, limit: int | None) -> None:
@@ -180,6 +181,7 @@ def run(xlsx_path: str, dry_run: bool, limit: int | None) -> None:
 
                 hike = Hike(
                     name=name,
+                    activity_type=build_activity_type(row),
                     description=build_description(row),
                     difficulty=row["difficulte"],
                     distance_km=parsed["distance_km"],

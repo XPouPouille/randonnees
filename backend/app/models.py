@@ -13,8 +13,11 @@ class Hike(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     difficulty: Mapped[str | None] = mapped_column(String(50), nullable=True)
     duration_hint: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # "rando" ou "velo"
+    activity_type: Mapped[str] = mapped_column(String(20), nullable=False, default="rando", server_default="rando")
 
     distance_km: Mapped[float | None] = mapped_column(Float, nullable=True)
     elevation_gain_m: Mapped[float | None] = mapped_column(Float, nullable=True)

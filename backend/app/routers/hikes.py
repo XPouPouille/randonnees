@@ -15,6 +15,11 @@ from app.schemas import HikeCreate, HikeOut, HikeSummary, HikeUpdate
 
 router = APIRouter(prefix="/api/hikes", tags=["hikes"])
 
+# Tolérance de simplification (degrés) appliquée à la trace pour la vue
+# d'ensemble sur la carte liste : garde la forme visible sans envoyer chaque
+# point GPS brut pour des centaines de randonnées à la fois.
+LIST_SIMPLIFY_TOLERANCE = 0.0008
+
 
 def _hike_to_out(hike: Hike) -> HikeOut:
     data = HikeOut.model_validate(hike, from_attributes=True).model_dump()
@@ -23,9 +28,18 @@ def _hike_to_out(hike: Hike) -> HikeOut:
     return HikeOut.model_validate(data)
 
 
+def _hike_to_summary(hike: Hike) -> HikeSummary:
+    data = HikeSummary.model_validate(hike, from_attributes=True).model_dump()
+    if hike.geom is not None:
+        shape = to_shape(hike.geom).simplify(LIST_SIMPLIFY_TOLERANCE, preserve_topology=False)
+        data["track_geojson"] = mapping(shape)
+    return HikeSummary.model_validate(data)
+
+
 @router.get("", response_model=list[HikeSummary])
 def list_hikes(db: Session = Depends(get_db)):
-    return db.query(Hike).order_by(Hike.name).all()
+    hikes = db.query(Hike).order_by(Hike.name).all()
+    return [_hike_to_summary(h) for h in hikes]
 
 
 @router.get("/{hike_id}", response_model=HikeOut)
@@ -42,10 +56,17 @@ async def create_hike(
     description: str | None = Form(None),
     difficulty: str | None = Form(None),
     duration_hint: str | None = Form(None),
+    activity_type: str = Form("rando"),
     gpx_file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
 ):
-    hike = Hike(name=name, description=description, difficulty=difficulty, duration_hint=duration_hint)
+    hike = Hike(
+        name=name,
+        description=description,
+        difficulty=difficulty,
+        duration_hint=duration_hint,
+        activity_type=activity_type,
+    )
     if gpx_file is not None:
         _apply_gpx(hike, await gpx_file.read(), gpx_file.filename)
     db.add(hike)
