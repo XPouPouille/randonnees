@@ -47,7 +47,12 @@ def parse_gpx(raw_bytes: bytes) -> dict:
 
     coordinates = [[p.longitude, p.latitude] for p in points]
 
+    name = gpx.name
+    if not name and gpx.tracks:
+        name = gpx.tracks[0].name
+
     return {
+        "name": name,
         "distance_km": round(cumulative_km, 2),
         "elevation_gain_m": round(uphill or 0.0, 1),
         "elevation_loss_m": round(downhill or 0.0, 1),

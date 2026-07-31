@@ -162,6 +162,28 @@ et les détails complémentaires s'ajoutent ensuite manuellement via le site
 (page "Ajouter une randonnée" → bouton d'upload GPX sur la fiche, à venir en
 V2 pour l'édition, ou en recréant la fiche avec le fichier GPX dès l'ajout).
 
+### Import massif depuis un export "Recto Verso" (lesothers.com / rectoverso.co)
+
+`app/scripts/import_recto_verso.py` importe directement les traces GPX (pas
+seulement les liens) depuis un classeur Excel exporté par ce service : pour
+chaque ligne, il télécharge le GPX (lien direct ou lien court
+`rectoverso.co/qr/...` résolu automatiquement), calcule distance/dénivelé/
+profil comme un upload manuel, et crée la randonnée + un lien externe vers la
+page d'origine. Les lignes déjà importées (même URL source) sont ignorées, le
+script est donc rejouable sans doublons.
+
+```bash
+docker compose cp "Recto Verso.xlsx" backend:/app/uploads/recto-verso.xlsx
+docker compose exec backend python -m app.scripts.import_recto_verso /app/uploads/recto-verso.xlsx
+```
+
+Tester sur quelques lignes sans écrire en base (`--dry-run`, avec `--limit N`
+optionnel) :
+
+```bash
+docker compose exec backend python -m app.scripts.import_recto_verso /app/uploads/recto-verso.xlsx --dry-run --limit 5
+```
+
 ## Sauvegarde de la base de données
 
 ```bash
