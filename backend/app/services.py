@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 
 import requests
@@ -72,8 +73,13 @@ def remove_gpx_file(stored_name: str) -> None:
 
 # Au-delà, l'URL GET (points encodés en paramètres) dépasse les limites de
 # longueur de requête du service et renvoie une erreur 400 — un tracé routé
-# en détail peut vite compter plusieurs centaines de points.
+# en détail peut vite compter plusieurs centaines, voire milliers, de points.
 ELEVATION_BATCH_SIZE = 200
+# Un tracé de plusieurs milliers de points déclenche plusieurs dizaines de
+# lots d'affilée : sans pause, l'IGN répond parfois 429 (constaté en usage
+# réel). Petite pause entre lots + quelques tentatives sur 429/5xx.
+ELEVATION_BATCH_DELAY = 0.3
+ELEVATION_MAX_RETRIES = 4
 
 
 def fetch_elevations(points: list[tuple[float, float]]) -> list[float]:
@@ -83,15 +89,24 @@ def fetch_elevations(points: list[tuple[float, float]]) -> list[float]:
         return []
     elevations: list[float] = []
     for i in range(0, len(points), ELEVATION_BATCH_SIZE):
+        if i > 0:
+            time.sleep(ELEVATION_BATCH_DELAY)
         batch = points[i : i + ELEVATION_BATCH_SIZE]
         lon_str = "|".join(str(lon) for _, lon in batch)
         lat_str = "|".join(str(lat) for lat, _ in batch)
-        resp = requests.get(
-            IGN_ELEVATION_URL,
-            params={"lon": lon_str, "lat": lat_str, "resource": "ign_rge_alti_wld", "indent": "false"},
-            timeout=20,
-        )
-        resp.raise_for_status()
+
+        for attempt in range(ELEVATION_MAX_RETRIES):
+            resp = requests.get(
+                IGN_ELEVATION_URL,
+                params={"lon": lon_str, "lat": lat_str, "resource": "ign_rge_alti_wld", "indent": "false"},
+                timeout=20,
+            )
+            if resp.status_code == 429 and attempt < ELEVATION_MAX_RETRIES - 1:
+                time.sleep(2**attempt)
+                continue
+            resp.raise_for_status()
+            break
+
         elevations.extend(e["z"] for e in resp.json()["elevations"])
     return elevations
 

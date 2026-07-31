@@ -39,6 +39,9 @@ class Hike(Base):
     links: Mapped[list["ExternalLink"]] = relationship(
         back_populates="hike", cascade="all, delete-orphan"
     )
+    pois: Mapped[list["PointOfInterest"]] = relationship(
+        back_populates="hike", cascade="all, delete-orphan"
+    )
 
 
 class ExternalLink(Base):
@@ -51,3 +54,22 @@ class ExternalLink(Base):
     label: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     hike: Mapped["Hike"] = relationship(back_populates="links")
+
+
+class PointOfInterest(Base):
+    """Point d'intérêt trouvé/gardé lors de la création d'un tracé (à la
+    manière d'OnRouteMap) : boulangerie, eau potable, camping, etc. Aussi
+    embarqué comme <wpt> dans le fichier GPX enregistré, mais stocké ici en
+    base pour pouvoir être réaffiché (carte/fiche détail) sans reparser le
+    GPX à chaque fois."""
+
+    __tablename__ = "points_of_interest"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    hike_id: Mapped[int] = mapped_column(ForeignKey("hikes.id", ondelete="CASCADE"))
+    lat: Mapped[float] = mapped_column(Float, nullable=False)
+    lon: Mapped[float] = mapped_column(Float, nullable=False)
+    name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    category: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    hike: Mapped["Hike"] = relationship(back_populates="pois")

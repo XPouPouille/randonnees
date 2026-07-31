@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.auth import require_admin
 from app.database import get_db
 from app.gpx_utils import build_gpx_bytes
-from app.models import Hike
+from app.models import Hike, PointOfInterest
 from app.schemas import (
     DrawHikeCreate,
     ElevationPointOut,
@@ -103,6 +103,9 @@ def create_drawn_hike(payload: DrawHikeCreate, db: Session = Depends(get_db)):
         description=payload.description,
     )
     apply_gpx(hike, gpx_bytes)
+    hike.pois = [
+        PointOfInterest(lat=p.lat, lon=p.lon, name=p.name, category=p.category) for p in payload.pois
+    ]
     db.add(hike)
     db.commit()
     db.refresh(hike)

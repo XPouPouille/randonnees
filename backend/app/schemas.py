@@ -27,6 +27,14 @@ class ElevationPoint(BaseModel):
     lon: float
 
 
+class PoiOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    lat: float
+    lon: float
+    name: str | None = None
+    category: str
+
+
 class HikeSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -49,6 +57,7 @@ class HikeOut(HikeSummary):
     gpx_filename: str | None
     created_at: datetime
     links: list[ExternalLinkOut] = []
+    pois: list[PoiOut] = []
 
 
 class HikeCreate(BaseModel):
@@ -81,13 +90,6 @@ class ElevationPointOut(BaseModel):
     lat: float
     lon: float
     elevation_m: float
-
-
-class PoiOut(BaseModel):
-    lat: float
-    lon: float
-    name: str | None = None
-    category: str
 
 
 class DrawHikeCreate(BaseModel):

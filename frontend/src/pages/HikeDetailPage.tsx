@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { MapContainer, Marker, Polyline } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Polyline, Popup } from "react-leaflet";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { deleteHike, getHike, updateHike } from "../api";
 import { BaseLayers } from "../components/IgnLayers";
 import { ElevationChart } from "../components/ElevationChart";
 import { ACTIVITY_COLORS, ACTIVITY_LABELS } from "../activity";
 import { NOTES_MAX_LENGTH } from "../constants";
+import { POI_LABELS } from "../poi";
 import type { ActivityType, HikeDetail } from "../types";
+
+const POI_COLOR = "#e07b00";
 
 function directionsUrl(lat: number, lon: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
@@ -215,12 +218,39 @@ export function HikeDetailPage() {
         {hike.start_lat != null && hike.start_lon != null && (
           <Marker position={[hike.start_lat, hike.start_lon]} />
         )}
+        {hike.pois.map((poi, i) => (
+          <CircleMarker
+            key={i}
+            center={[poi.lat, poi.lon]}
+            radius={5}
+            pathOptions={{ color: POI_COLOR, fillColor: POI_COLOR, fillOpacity: 1 }}
+          >
+            <Popup>
+              <strong>{poi.name || POI_LABELS[poi.category] || poi.category}</strong>
+              <br />
+              {POI_LABELS[poi.category] || poi.category}
+            </Popup>
+          </CircleMarker>
+        ))}
       </MapContainer>
 
       {hike.elevation_profile && hike.elevation_profile.length > 0 && (
         <>
           <h3>Profil topologique</h3>
           <ElevationChart profile={hike.elevation_profile} />
+        </>
+      )}
+
+      {hike.pois.length > 0 && (
+        <>
+          <h3>Points d'intérêt</h3>
+          <ul>
+            {hike.pois.map((poi, i) => (
+              <li key={i}>
+                {poi.name || POI_LABELS[poi.category] || poi.category} ({POI_LABELS[poi.category] || poi.category})
+              </li>
+            ))}
+          </ul>
         </>
       )}
 

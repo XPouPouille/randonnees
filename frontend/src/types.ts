@@ -35,6 +35,7 @@ export interface HikeDetail extends HikeSummary {
   gpx_filename?: string | null;
   created_at: string;
   links: ExternalLink[];
+  pois: PoiResult[];
 }
 
 export interface HikeUpdatePayload {
