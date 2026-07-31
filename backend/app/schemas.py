@@ -90,3 +90,8 @@ class DrawHikeCreate(BaseModel):
     duration_hint: str | None = None
     description: str | None = None
     points: list[LatLon]
+
+
+class RouteRequest(BaseModel):
+    points: list[LatLon]
+    activity_type: str = "rando"

@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Polyline, Tooltip, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
-import { createDrawnHike, getElevationProfile } from "../api";
+import { createDrawnHike, getElevationProfile, getRoute } from "../api";
 import { BaseLayers } from "../components/IgnLayers";
 import { ElevationChart } from "../components/ElevationChart";
 import { ACTIVITY_COLORS } from "../activity";
@@ -36,8 +36,34 @@ export function CreatePage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [routedPath, setRoutedPath] = useState<LatLon[] | null>(null);
+  const [routing, setRouting] = useState(false);
+
   const color = ACTIVITY_COLORS[activityType];
-  const polyline = useMemo(() => points.map((p) => [p.lat, p.lon] as [number, number]), [points]);
+  const straightLine = useMemo(() => points.map((p) => [p.lat, p.lon] as [number, number]), [points]);
+
+  // Recalcule l'itinéraire routier (suit les routes/chemins IGN) à chaque
+  // changement des points, avec un léger debounce pour ne pas spammer
+  // l'API à chaque clic rapide.
+  useEffect(() => {
+    if (points.length < 2) {
+      setRoutedPath(null);
+      return;
+    }
+    setRouting(true);
+    const timeout = setTimeout(() => {
+      getRoute(points, activityType)
+        .then(setRoutedPath)
+        .catch(() => setRoutedPath(null))
+        .finally(() => setRouting(false));
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [points, activityType]);
+
+  const displayLine = useMemo(() => {
+    if (routedPath && routedPath.length >= 2) return routedPath.map((p) => [p.lat, p.lon] as [number, number]);
+    return straightLine;
+  }, [routedPath, straightLine]);
 
   function handleMapClick(latlng: LatLon) {
     setProfile(null);
@@ -80,7 +106,8 @@ export function CreatePage() {
     setProfileLoading(true);
     setError(null);
     try {
-      const result = await getElevationProfile(points);
+      const forProfile = routedPath && routedPath.length >= 2 ? routedPath : points;
+      const result = await getElevationProfile(forProfile);
       setProfile(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -167,7 +194,9 @@ export function CreatePage() {
       </p>
 
       <div style={{ marginBottom: 8, padding: 8, border: "1px solid #ddd", borderRadius: 6 }}>
-        <strong>Outils de tracé</strong> — cliquez sur la carte pour ajouter un point.
+        <strong>Outils de tracé</strong> — cliquez sur la carte pour ajouter un point. Le tracé suit
+        automatiquement les routes/chemins IGN entre les points.
+        {routing && <em> Calcul de l'itinéraire…</em>}
         <br />
         {selectedIndex !== null ? (
           <>
@@ -201,7 +230,7 @@ export function CreatePage() {
       <MapContainer center={[46.6, 2.4]} zoom={6} style={{ height: "60vh", width: "100%" }}>
         <BaseLayers />
         <ClickHandler onClick={handleMapClick} />
-        {polyline.length >= 2 && <Polyline positions={polyline} pathOptions={{ color, weight: 3 }} />}
+        {displayLine.length >= 2 && <Polyline positions={displayLine} pathOptions={{ color, weight: 3 }} />}
         {points.map((p, i) => (
           <CircleMarker
             key={i}

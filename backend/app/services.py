@@ -17,6 +17,11 @@ from app.schemas import HikeOut, HikeSummary
 LIST_SIMPLIFY_TOLERANCE = 0.0008
 
 IGN_ELEVATION_URL = "https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json"
+IGN_ITINERAIRE_URL = "https://data.geopf.fr/navigation/itineraire"
+
+# Le service IGN n'a pas de profil vélo dédié : "car" (réseau routier) est la
+# meilleure approximation disponible pour un itinéraire cyclo/VTT.
+ROUTING_PROFILES = {"rando": "pedestrian", "velo": "car"}
 
 
 def hike_to_out(hike: Hike) -> HikeOut:
@@ -61,18 +66,61 @@ def remove_gpx_file(stored_name: str) -> None:
         os.remove(path)
 
 
+# Au-delà, l'URL GET (points encodés en paramètres) dépasse les limites de
+# longueur de requête du service et renvoie une erreur 400 — un tracé routé
+# en détail peut vite compter plusieurs centaines de points.
+ELEVATION_BATCH_SIZE = 200
+
+
 def fetch_elevations(points: list[tuple[float, float]]) -> list[float]:
     """Interroge le service altimétrique IGN (Géoplateforme, sans clé) pour une
     liste de points (lat, lon) et retourne l'altitude (m) dans le même ordre."""
     if not points:
         return []
-    lon_str = "|".join(str(lon) for _, lon in points)
-    lat_str = "|".join(str(lat) for lat, _ in points)
-    resp = requests.get(
-        IGN_ELEVATION_URL,
-        params={"lon": lon_str, "lat": lat_str, "resource": "ign_rge_alti_wld", "indent": "false"},
-        timeout=20,
-    )
-    resp.raise_for_status()
-    elevations = resp.json()["elevations"]
-    return [e["z"] for e in elevations]
+    elevations: list[float] = []
+    for i in range(0, len(points), ELEVATION_BATCH_SIZE):
+        batch = points[i : i + ELEVATION_BATCH_SIZE]
+        lon_str = "|".join(str(lon) for _, lon in batch)
+        lat_str = "|".join(str(lat) for lat, _ in batch)
+        resp = requests.get(
+            IGN_ELEVATION_URL,
+            params={"lon": lon_str, "lat": lat_str, "resource": "ign_rge_alti_wld", "indent": "false"},
+            timeout=20,
+        )
+        resp.raise_for_status()
+        elevations.extend(e["z"] for e in resp.json()["elevations"])
+    return elevations
+
+
+def fetch_route(points: list[tuple[float, float]], activity_type: str) -> list[tuple[float, float]]:
+    """Calcule un itinéraire suivant le réseau IGN (BD TOPO, Géoplateforme,
+    sans clé) reliant des points (lat, lon) successifs par les routes/chemins
+    plutôt qu'à vol d'oiseau. Si le service échoue (zone non couverte,
+    indisponibilité...), retourne les points tels quels : le tracé se rabat
+    alors sur des segments en ligne droite plutôt que de bloquer l'utilisateur.
+    """
+    if len(points) < 2:
+        return points
+
+    profile = ROUTING_PROFILES.get(activity_type, "pedestrian")
+    start_lat, start_lon = points[0]
+    end_lat, end_lon = points[-1]
+    params = {
+        "resource": "bdtopo-osrm",
+        "profile": profile,
+        "optimization": "fastest",
+        "start": f"{start_lon},{start_lat}",
+        "end": f"{end_lon},{end_lat}",
+        "geometryFormat": "geojson",
+        "crs": "EPSG:4326",
+    }
+    if len(points) > 2:
+        params["intermediates"] = "|".join(f"{lon},{lat}" for lat, lon in points[1:-1])
+
+    try:
+        resp = requests.get(IGN_ITINERAIRE_URL, params=params, timeout=20)
+        resp.raise_for_status()
+        coords = resp.json()["geometry"]["coordinates"]
+        return [(lat, lon) for lon, lat in coords]
+    except (requests.RequestException, KeyError, ValueError, TypeError):
+        return points

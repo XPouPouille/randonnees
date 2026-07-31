@@ -1,4 +1,11 @@
-import type { DrawHikePayload, ElevationResultPoint, HikeDetail, HikeSummary, HikeUpdatePayload } from "./types";
+import type {
+  ActivityType,
+  DrawHikePayload,
+  ElevationResultPoint,
+  HikeDetail,
+  HikeSummary,
+  HikeUpdatePayload,
+} from "./types";
 import type { LatLon } from "./geo";
 
 const API_BASE = "/api";
@@ -79,5 +86,13 @@ export function createDrawnHike(payload: DrawHikePayload): Promise<HikeDetail> {
     method: "POST",
     headers: { "Content-Type": "application/json", ...adminHeaders() },
     body: JSON.stringify(payload),
+  }).then((r) => handle(r));
+}
+
+export function getRoute(points: LatLon[], activityType: ActivityType): Promise<LatLon[]> {
+  return fetch(`${API_BASE}/route`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ points, activity_type: activityType }),
   }).then((r) => handle(r));
 }
