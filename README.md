@@ -86,10 +86,18 @@ démarrage du conteneur `backend`.
 
 ### Intégration Traefik
 
-Le service `frontend` porte les labels Traefik pour l'exposition sur
-`randonnees.xavierchapouille.ddns.net` (HTTPS via le certresolver
-`letsencrypt`) et rejoint le réseau Docker externe **`frontend`** sur lequel
-tourne Traefik. Prérequis sur le serveur :
+Le service `frontend` porte les labels Traefik nécessaires à l'exposition
+HTTPS (certresolver `letsencrypt`) et rejoint le réseau Docker externe
+**`frontend`** sur lequel tourne Traefik. Le nom de domaine public n'est pas
+codé en dur dans `docker-compose.yml` : il est lu depuis la variable
+`TRAEFIK_DOMAIN` de ton `.env` (non commité) pour ne pas exposer ton domaine
+sur le dépôt GitHub public. Renseigne-la dans `.env` :
+
+```
+TRAEFIK_DOMAIN=ton-domaine.example.com
+```
+
+Prérequis sur le serveur :
 
 ```bash
 docker network create frontend   # si le réseau n'existe pas déjà
@@ -111,7 +119,8 @@ Traefik.
 | `CORS_ORIGINS` | Origines autorisées côté API, séparées par des virgules |
 | `IGN_MODE` | `geoplateforme` (par défaut, sans clé) ou `key` |
 | `IGN_API_KEY` | Clé Géoportail, utilisée uniquement si `IGN_MODE=key` |
-| `FRONTEND_PORT` | Port exposé sur l'hôte pour le site (défaut `80`) |
+| `TRAEFIK_DOMAIN` | Nom de domaine public utilisé par le label `traefik.http.routers.randonnees.rule` |
+| `FRONTEND_PORT` | Port exposé sur l'hôte pour le site (défaut `80`), inutilisé si accès uniquement via Traefik |
 
 ### Obtenir une clé IGN (optionnel)
 

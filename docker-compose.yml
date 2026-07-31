@@ -43,7 +43,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=frontend"
-      - "traefik.http.routers.randonnees.rule=Host(`randonnees.xavierchapouille.ddns.net`)"
+      - "traefik.http.routers.randonnees.rule=Host(`${TRAEFIK_DOMAIN}`)"
       - "traefik.http.routers.randonnees.entrypoints=websecure"
       - "traefik.http.routers.randonnees.tls=true"
       - "traefik.http.routers.randonnees.tls.certresolver=letsencrypt"
