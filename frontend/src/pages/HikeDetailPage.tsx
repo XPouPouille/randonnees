@@ -284,6 +284,14 @@ export function HikeDetailPage() {
               </a>
             </p>
           )}
+
+          {hike.gpx_filename && (
+            <p>
+              <a href={`/uploads/${hike.gpx_filename}`} download={`${hike.name}.gpx`}>
+                ⬇️ Télécharger le fichier GPX
+              </a>
+            </p>
+          )}
         </>
       )}
 
