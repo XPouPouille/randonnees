@@ -29,6 +29,7 @@ class ElevationPoint(BaseModel):
 
 class PoiOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+    id: int | None = None
     lat: float
     lon: float
     name: str | None = None

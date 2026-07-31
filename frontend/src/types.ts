@@ -54,6 +54,7 @@ export interface ElevationResultPoint {
 }
 
 export interface PoiResult {
+  id?: number | null;
   lat: number;
   lon: number;
   name?: string | null;

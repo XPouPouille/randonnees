@@ -110,3 +110,29 @@ def create_drawn_hike(payload: DrawHikeCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(hike)
     return hike_to_out(hike)
+
+
+@router.post("/hikes/{hike_id}/pois", response_model=HikeOut, dependencies=[Depends(require_admin)])
+def add_pois(hike_id: int, payload: list[PoiOut], db: Session = Depends(get_db)):
+    hike = db.get(Hike, hike_id)
+    if not hike:
+        raise HTTPException(status_code=404, detail="Randonnée introuvable")
+    existing = {(p.lat, p.lon, p.category) for p in hike.pois}
+    for poi in payload:
+        key = (poi.lat, poi.lon, poi.category)
+        if key in existing:
+            continue
+        hike.pois.append(PointOfInterest(lat=poi.lat, lon=poi.lon, name=poi.name, category=poi.category))
+        existing.add(key)
+    db.commit()
+    db.refresh(hike)
+    return hike_to_out(hike)
+
+
+@router.delete("/pois/{poi_id}", status_code=204, dependencies=[Depends(require_admin)])
+def delete_poi(poi_id: int, db: Session = Depends(get_db)):
+    poi = db.get(PointOfInterest, poi_id)
+    if not poi:
+        raise HTTPException(status_code=404, detail="Point d'intérêt introuvable")
+    db.delete(poi)
+    db.commit()

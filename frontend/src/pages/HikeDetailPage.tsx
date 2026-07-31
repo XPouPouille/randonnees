@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { CircleMarker, MapContainer, Marker, Polyline, Popup } from "react-leaflet";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { deleteHike, getHike, updateHike } from "../api";
+import { addPoisToHike, deleteHike, deletePoi, getHike, getPoi, updateHike } from "../api";
 import { BaseLayers } from "../components/IgnLayers";
 import { ElevationChart } from "../components/ElevationChart";
+import { PoiSearchControls } from "../components/PoiSearchControls";
 import { ACTIVITY_COLORS, ACTIVITY_LABELS } from "../activity";
 import { NOTES_MAX_LENGTH } from "../constants";
-import { POI_LABELS } from "../poi";
-import type { ActivityType, HikeDetail } from "../types";
+import { DEFAULT_POI_CATEGORIES, POI_LABELS } from "../poi";
+import { samplePoints } from "../geo";
+import type { ActivityType, HikeDetail, PoiResult } from "../types";
 
 const POI_COLOR = "#e07b00";
+const FOUND_POI_COLOR = "#1565c0";
+const POI_SEARCH_SAMPLE_MAX = 300;
 
 function directionsUrl(lat: number, lon: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
@@ -45,6 +49,14 @@ export function HikeDetailPage() {
   const [form, setForm] = useState<EditForm | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [poiSearchOpen, setPoiSearchOpen] = useState(false);
+  const [poiRadius, setPoiRadius] = useState(1000);
+  const [poiCategories, setPoiCategories] = useState<Set<string>>(new Set(DEFAULT_POI_CATEGORIES));
+  const [foundPois, setFoundPois] = useState<PoiResult[]>([]);
+  const [poiSearching, setPoiSearching] = useState(false);
+  const [poiAdding, setPoiAdding] = useState(false);
+  const [poiError, setPoiError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -91,6 +103,69 @@ export function HikeDetailPage() {
       setSaveError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
+    }
+  }
+
+  function togglePoiCategory(key: string) {
+    setPoiCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  async function handleSearchPoi() {
+    if (!hike) return;
+    const source =
+      coords && coords.length > 0
+        ? coords.map(([lat, lon]) => ({ lat, lon }))
+        : hike.start_lat != null && hike.start_lon != null
+          ? [{ lat: hike.start_lat, lon: hike.start_lon }]
+          : [];
+    if (source.length === 0 || poiCategories.size === 0) return;
+    setPoiSearching(true);
+    setPoiError(null);
+    try {
+      const result = await getPoi(samplePoints(source, POI_SEARCH_SAMPLE_MAX), poiRadius, Array.from(poiCategories));
+      // Ne propose que les POI pas déjà enregistrés sur cette rando.
+      const existing = new Set(hike.pois.map((p) => `${p.lat},${p.lon},${p.category}`));
+      setFoundPois(result.filter((p) => !existing.has(`${p.lat},${p.lon},${p.category}`)));
+    } catch (err) {
+      setPoiError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setPoiSearching(false);
+    }
+  }
+
+  function removeFoundPoi(index: number) {
+    setFoundPois((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleAddFoundPois() {
+    if (!hike || foundPois.length === 0) return;
+    localStorage.setItem("admin_token", adminToken);
+    setPoiAdding(true);
+    setPoiError(null);
+    try {
+      const updated = await addPoisToHike(hike.id, foundPois);
+      setHike(updated);
+      setFoundPois([]);
+    } catch (err) {
+      setPoiError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setPoiAdding(false);
+    }
+  }
+
+  async function handleDeleteSavedPoi(poiId: number | null | undefined) {
+    if (!hike || poiId == null) return;
+    localStorage.setItem("admin_token", adminToken);
+    try {
+      await deletePoi(poiId);
+      setHike({ ...hike, pois: hike.pois.filter((p) => p.id !== poiId) });
+    } catch (err) {
+      setPoiError(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -220,7 +295,7 @@ export function HikeDetailPage() {
         )}
         {hike.pois.map((poi, i) => (
           <CircleMarker
-            key={i}
+            key={`saved-${i}`}
             center={[poi.lat, poi.lon]}
             radius={5}
             pathOptions={{ color: POI_COLOR, fillColor: POI_COLOR, fillOpacity: 1 }}
@@ -229,6 +304,28 @@ export function HikeDetailPage() {
               <strong>{poi.name || POI_LABELS[poi.category] || poi.category}</strong>
               <br />
               {POI_LABELS[poi.category] || poi.category}
+              <br />
+              <button type="button" onClick={() => handleDeleteSavedPoi(poi.id)}>
+                Retirer
+              </button>
+            </Popup>
+          </CircleMarker>
+        ))}
+        {foundPois.map((poi, i) => (
+          <CircleMarker
+            key={`found-${i}`}
+            center={[poi.lat, poi.lon]}
+            radius={5}
+            pathOptions={{ color: FOUND_POI_COLOR, fillColor: FOUND_POI_COLOR, fillOpacity: 1 }}
+          >
+            <Popup>
+              <strong>{poi.name || POI_LABELS[poi.category] || poi.category}</strong>
+              <br />
+              {POI_LABELS[poi.category] || poi.category}
+              <br />
+              <button type="button" onClick={() => removeFoundPoi(i)}>
+                Retirer
+              </button>
             </Popup>
           </CircleMarker>
         ))}
@@ -241,17 +338,62 @@ export function HikeDetailPage() {
         </>
       )}
 
-      {hike.pois.length > 0 && (
+      <h3>Points d'intérêt</h3>
+      {hike.pois.length === 0 && <p>Aucun point d'intérêt pour l'instant.</p>}
+      <ul>
+        {hike.pois.map((poi, i) => (
+          <li key={i}>
+            {poi.name || POI_LABELS[poi.category] || poi.category} ({POI_LABELS[poi.category] || poi.category}){" "}
+            <button type="button" onClick={() => handleDeleteSavedPoi(poi.id)}>
+              Retirer
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {poiSearchOpen ? (
         <>
-          <h3>Points d'intérêt</h3>
-          <ul>
-            {hike.pois.map((poi, i) => (
-              <li key={i}>
-                {poi.name || POI_LABELS[poi.category] || poi.category} ({POI_LABELS[poi.category] || poi.category})
-              </li>
-            ))}
-          </ul>
+          <p>
+            <label>
+              Token admin
+              <br />
+              <input type="password" value={adminToken} onChange={(e) => setAdminToken(e.target.value)} />
+            </label>
+          </p>
+          <PoiSearchControls
+            radius={poiRadius}
+            setRadius={setPoiRadius}
+            categories={poiCategories}
+            toggleCategory={togglePoiCategory}
+            onSearch={handleSearchPoi}
+            loading={poiSearching}
+            foundCount={foundPois.length}
+            onClearFound={() => setFoundPois([])}
+          />
+          {poiError && <p style={{ color: "red" }}>{poiError}</p>}
+          <p>
+            {foundPois.length > 0 && (
+              <button type="button" onClick={handleAddFoundPois} disabled={poiAdding}>
+                {poiAdding ? "Ajout…" : `Ajouter ces ${foundPois.length} point(s) d'intérêt`}
+              </button>
+            )}{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setPoiSearchOpen(false);
+                setFoundPois([]);
+              }}
+            >
+              Fermer la recherche
+            </button>
+          </p>
         </>
+      ) : (
+        <p>
+          <button type="button" onClick={() => setPoiSearchOpen(true)}>
+            Rechercher des points d'intérêt
+          </button>
+        </p>
       )}
 
       <h3>Liens externes</h3>

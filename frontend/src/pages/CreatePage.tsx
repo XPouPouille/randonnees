@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { createDrawnHike, getElevationProfile, getPoi, getRoute } from "../api";
 import { BaseLayers } from "../components/IgnLayers";
 import { ElevationChart } from "../components/ElevationChart";
+import { PoiSearchControls } from "../components/PoiSearchControls";
 import { ACTIVITY_COLORS } from "../activity";
-import { DEFAULT_POI_CATEGORIES, POI_CATEGORIES, POI_LABELS } from "../poi";
+import { DEFAULT_POI_CATEGORIES, POI_LABELS } from "../poi";
 import { haversineKm, samplePoints, type LatLon } from "../geo";
 import type { ActivityType, ElevationResultPoint, PoiResult } from "../types";
 
@@ -351,49 +352,17 @@ export function CreatePage() {
         </table>
       )}
 
-      <div style={{ marginBottom: 8, padding: 8, border: "1px solid #ddd", borderRadius: 6 }}>
-        <strong>Points d'intérêt</strong> — recherche façon OnRouteMap (données OpenStreetMap) le long du tracé.
-        <br />
-        <label>
-          Rayon de recherche : {poiRadius} m
-          <br />
-          <input
-            type="range"
-            min={100}
-            max={3000}
-            step={100}
-            value={poiRadius}
-            onChange={(e) => setPoiRadius(Number(e.target.value))}
-          />
-        </label>
-        <div style={{ margin: "8px 0" }}>
-          {POI_CATEGORIES.map((c) => (
-            <label key={c.key} style={{ display: "inline-block", width: 220 }}>
-              <input
-                type="checkbox"
-                checked={poiCategories.has(c.key)}
-                onChange={() => toggleCategory(c.key)}
-              />{" "}
-              {c.label}
-            </label>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={handleSearchPoi}
-          disabled={points.length < 1 || poiCategories.size === 0 || poiLoading}
-        >
-          {poiLoading ? "Recherche…" : "Rechercher les points d'intérêt"}
-        </button>{" "}
-        {pois.length > 0 && (
-          <>
-            {pois.length} trouvé(s).{" "}
-            <button type="button" onClick={() => setPois([])}>
-              Tout retirer
-            </button>
-          </>
-        )}
-      </div>
+      <PoiSearchControls
+        radius={poiRadius}
+        setRadius={setPoiRadius}
+        categories={poiCategories}
+        toggleCategory={toggleCategory}
+        onSearch={handleSearchPoi}
+        loading={poiLoading}
+        searchDisabled={points.length < 1}
+        foundCount={pois.length}
+        onClearFound={() => setPois([])}
+      />
 
       <p>
         <button type="button" onClick={handlePreview} disabled={points.length < 2 || profileLoading}>

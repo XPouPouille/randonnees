@@ -105,3 +105,18 @@ export function getPoi(points: LatLon[], radiusM: number, categories: string[]):
     body: JSON.stringify({ points, radius_m: radiusM, categories }),
   }).then((r) => handle(r));
 }
+
+export function addPoisToHike(hikeId: number, pois: PoiResult[]): Promise<HikeDetail> {
+  return fetch(`${API_BASE}/hikes/${hikeId}/pois`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...adminHeaders() },
+    body: JSON.stringify(pois),
+  }).then((r) => handle(r));
+}
+
+export function deletePoi(poiId: number): Promise<void> {
+  return fetch(`${API_BASE}/pois/${poiId}`, {
+    method: "DELETE",
+    headers: adminHeaders(),
+  }).then((r) => handle(r));
+}
