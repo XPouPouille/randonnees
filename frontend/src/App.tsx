@@ -4,18 +4,32 @@ import { ListPage } from "./pages/ListPage";
 import { HikeDetailPage } from "./pages/HikeDetailPage";
 import { AddHikePage } from "./pages/AddHikePage";
 import { CreatePage } from "./pages/CreatePage";
+import { useTheme } from "./theme";
 
 export function App() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="app">
       <header>
-        <h1>
-          <Link to="/">🥾 Randonnées</Link>
-        </h1>
-        <nav>
-          <Link to="/">Carte</Link> · <Link to="/liste">Liste</Link> · <Link to="/add">Ajouter une randonnée</Link> ·{" "}
-          <Link to="/creer">Créer un tracé</Link>
-        </nav>
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={theme === "light" ? "Passer en thème sombre" : "Passer en thème clair"}
+          aria-label={theme === "light" ? "Passer en thème sombre" : "Passer en thème clair"}
+        >
+          {theme === "light" ? "🌙" : "☀️"}
+        </button>
+        <div className="title-nav">
+          <h1>
+            <Link to="/">🥾 Randonnées</Link>
+          </h1>
+          <nav>
+            <Link to="/">Carte</Link> · <Link to="/liste">Liste</Link> ·{" "}
+            <Link to="/add">Ajouter une randonnée</Link> · <Link to="/creer">Créer un tracé</Link>
+          </nav>
+        </div>
       </header>
       <main>
         <Routes>
