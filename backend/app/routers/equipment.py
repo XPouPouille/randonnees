@@ -30,10 +30,17 @@ def create_equipment(payload: EquipmentItemCreate, db: Session = Depends(get_db)
 # "reorder" en int pour item_id et renvoie 422 avant d'atteindre cette route.
 @router.put("/reorder", response_model=list[EquipmentItemOut])
 def reorder_equipment(payload: EquipmentReorderRequest, db: Session = Depends(get_db)):
-    items = {item.id: item for item in db.query(EquipmentItem).filter(EquipmentItem.id.in_(payload.ids))}
-    for position, item_id in enumerate(payload.ids):
-        if item_id in items:
-            items[item_id].position = position
+    # Toujours réassigner une position unique et contiguë à TOUS les items,
+    # pas seulement ceux listés : si la liste envoyée est incomplète (item
+    # ajouté entre-temps par un autre onglet, requête partielle...), les
+    # items omis sont simplement ajoutés à la suite plutôt que de risquer
+    # une collision de position avec ceux qu'on vient de réordonner.
+    all_items = db.query(EquipmentItem).order_by(EquipmentItem.position, EquipmentItem.id).all()
+    by_id = {item.id: item for item in all_items}
+    ordered_ids = [i for i in payload.ids if i in by_id]
+    remaining_ids = [item.id for item in all_items if item.id not in set(ordered_ids)]
+    for position, item_id in enumerate(ordered_ids + remaining_ids):
+        by_id[item_id].position = position
     db.commit()
     return db.query(EquipmentItem).order_by(EquipmentItem.position, EquipmentItem.id).all()
 
