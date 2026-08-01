@@ -2,6 +2,7 @@ import type {
   ActivityType,
   DrawHikePayload,
   ElevationResultPoint,
+  EquipmentItem,
   HikeDetail,
   HikeSummary,
   HikeUpdatePayload,
@@ -119,4 +120,32 @@ export function deletePoi(poiId: number): Promise<void> {
     method: "DELETE",
     headers: adminHeaders(),
   }).then((r) => handle(r));
+}
+
+// Liste de matériel : pas de token admin, ouverte à tous (à la demande).
+export function getEquipment(): Promise<EquipmentItem[]> {
+  return fetch(`${API_BASE}/equipment`).then((r) => handle(r));
+}
+
+export function createEquipmentItem(name: string, quantity: number): Promise<EquipmentItem> {
+  return fetch(`${API_BASE}/equipment`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, quantity }),
+  }).then((r) => handle(r));
+}
+
+export function updateEquipmentItem(
+  id: number,
+  payload: { name?: string; quantity?: number; checked?: boolean }
+): Promise<EquipmentItem> {
+  return fetch(`${API_BASE}/equipment/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then((r) => handle(r));
+}
+
+export function deleteEquipmentItem(id: number): Promise<void> {
+  return fetch(`${API_BASE}/equipment/${id}`, { method: "DELETE" }).then((r) => handle(r));
 }

@@ -112,3 +112,22 @@ class PoiRequest(BaseModel):
     points: list[LatLon]
     radius_m: int = Field(default=1000, ge=50, le=5000)
     categories: list[str]
+
+
+class EquipmentItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    quantity: int
+    checked: bool
+
+
+class EquipmentItemCreate(BaseModel):
+    name: str
+    quantity: int = Field(default=1, ge=1)
+
+
+class EquipmentItemUpdate(BaseModel):
+    name: str | None = None
+    quantity: int | None = Field(default=None, ge=1)
+    checked: bool | None = None

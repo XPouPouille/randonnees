@@ -4,6 +4,7 @@ import { ListPage } from "./pages/ListPage";
 import { HikeDetailPage } from "./pages/HikeDetailPage";
 import { AddHikePage } from "./pages/AddHikePage";
 import { CreatePage } from "./pages/CreatePage";
+import { EquipmentPage } from "./pages/EquipmentPage";
 import { useTheme } from "./theme";
 
 export function App() {
@@ -27,7 +28,8 @@ export function App() {
           </h1>
           <nav>
             <Link to="/">Carte</Link> · <Link to="/liste">Liste</Link> ·{" "}
-            <Link to="/add">Ajouter une randonnée</Link> · <Link to="/creer">Créer un tracé</Link>
+            <Link to="/add">Ajouter une randonnée</Link> · <Link to="/creer">Créer un tracé</Link> ·{" "}
+            <Link to="/materiel">Matériel</Link>
           </nav>
         </div>
       </header>
@@ -38,6 +40,7 @@ export function App() {
           <Route path="/hikes/:id" element={<HikeDetailPage />} />
           <Route path="/add" element={<AddHikePage />} />
           <Route path="/creer" element={<CreatePage />} />
+          <Route path="/materiel" element={<EquipmentPage />} />
         </Routes>
       </main>
     </div>

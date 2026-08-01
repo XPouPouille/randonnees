@@ -73,3 +73,15 @@ class PointOfInterest(Base):
     category: Mapped[str] = mapped_column(String(50), nullable=False)
 
     hike: Mapped["Hike"] = relationship(back_populates="pois")
+
+
+class EquipmentItem(Base):
+    """Liste de matériel (checklist) : indépendante des randonnées, sans
+    protection par token admin (à la demande explicite - usage perso)."""
+
+    __tablename__ = "equipment_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    quantity: Mapped[int] = mapped_column(default=1, server_default="1")
+    checked: Mapped[bool] = mapped_column(default=False, server_default="false")
