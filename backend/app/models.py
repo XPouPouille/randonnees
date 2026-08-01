@@ -85,3 +85,4 @@ class EquipmentItem(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     quantity: Mapped[int] = mapped_column(default=1, server_default="1")
     checked: Mapped[bool] = mapped_column(default=False, server_default="false")
+    position: Mapped[int] = mapped_column(default=0, server_default="0")

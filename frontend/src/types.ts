@@ -66,6 +66,7 @@ export interface EquipmentItem {
   name: string;
   quantity: number;
   checked: boolean;
+  position: number;
 }
 
 export interface DrawHikePayload {

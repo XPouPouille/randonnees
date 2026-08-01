@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createEquipmentItem, deleteEquipmentItem, getEquipment, updateEquipmentItem } from "../api";
+import { createEquipmentItem, deleteEquipmentItem, getEquipment, reorderEquipment, updateEquipmentItem } from "../api";
 import type { EquipmentItem } from "../types";
 
 export function EquipmentPage() {
@@ -58,6 +58,20 @@ export function EquipmentPage() {
     }
   }
 
+  async function move(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= items.length) return;
+    const reordered = [...items];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    setItems(reordered);
+    try {
+      await reorderEquipment(reordered.map((i) => i.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setItems(items); // annule l'ordre local si l'enregistrement échoue
+    }
+  }
+
   return (
     <div>
       <h2>Matériel</h2>
@@ -90,14 +104,33 @@ export function EquipmentPage() {
           <thead>
             <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
               <th></th>
+              <th></th>
               <th>Désignation</th>
               <th>Quantité</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
+            {items.map((item, index) => (
               <tr key={item.id} style={{ borderBottom: "1px solid #eee" }}>
+                <td style={{ whiteSpace: "nowrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => move(index, -1)}
+                    disabled={index === 0}
+                    aria-label="Monter"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => move(index, 1)}
+                    disabled={index === items.length - 1}
+                    aria-label="Descendre"
+                  >
+                    ↓
+                  </button>
+                </td>
                 <td>
                   <input type="checkbox" checked={item.checked} onChange={() => toggleChecked(item)} />
                 </td>

@@ -149,3 +149,11 @@ export function updateEquipmentItem(
 export function deleteEquipmentItem(id: number): Promise<void> {
   return fetch(`${API_BASE}/equipment/${id}`, { method: "DELETE" }).then((r) => handle(r));
 }
+
+export function reorderEquipment(ids: number[]): Promise<EquipmentItem[]> {
+  return fetch(`${API_BASE}/equipment/reorder`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  }).then((r) => handle(r));
+}

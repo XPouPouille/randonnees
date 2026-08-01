@@ -120,6 +120,7 @@ class EquipmentItemOut(BaseModel):
     name: str
     quantity: int
     checked: bool
+    position: int
 
 
 class EquipmentItemCreate(BaseModel):
@@ -131,3 +132,7 @@ class EquipmentItemUpdate(BaseModel):
     name: str | None = None
     quantity: int | None = Field(default=None, ge=1)
     checked: bool | None = None
+
+
+class EquipmentReorderRequest(BaseModel):
+    ids: list[int]
