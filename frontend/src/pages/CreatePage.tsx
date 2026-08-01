@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Polyline, Popup, Tooltip, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import { createDrawnHike, getElevationProfile, getPoi, getRoute } from "../api";
-import { BaseLayers, NationalParksToggle } from "../components/IgnLayers";
+import { BaseLayers, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
 import { ElevationChart } from "../components/ElevationChart";
 import { PoiSearchControls } from "../components/PoiSearchControls";
 import { ACTIVITY_COLORS } from "../activity";
@@ -272,6 +272,7 @@ export function CreatePage() {
       <MapContainer center={[46.6, 2.4]} zoom={6} style={{ height: "60vh", width: "100%" }}>
         <BaseLayers />
         <NationalParksToggle />
+        <NationalParksAdhesionToggle />
         <ClickHandler onClick={handleMapClick} />
         {displayLine.length >= 2 && <Polyline positions={displayLine} pathOptions={{ color, weight: 3 }} />}
         {points.map((p, i) => (

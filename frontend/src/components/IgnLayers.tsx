@@ -70,31 +70,39 @@ export function BaseLayers() {
   );
 }
 
-/** Bouton visible (coin haut-gauche de la carte) pour afficher/masquer la
- * couche des parcs nationaux (vert semi-transparent), à placer comme enfant
- * direct d'un MapContainer, à côté de BaseLayers. */
-export function NationalParksToggle() {
+interface ParkLayerToggleProps {
+  label: string;
+  geojsonUrl: string;
+  color: string;
+  fillOpacity: number;
+  marginTop: number;
+}
+
+/** Bouton visible (coin haut-gauche de la carte) pour afficher/masquer une
+ * couche de zones de parc national (vert semi-transparent), à placer comme
+ * enfant direct d'un MapContainer, à côté de BaseLayers. */
+function ParkLayerToggle({ label, geojsonUrl, color, fillOpacity, marginTop }: ParkLayerToggleProps) {
   const [visible, setVisible] = useState(false);
   const [data, setData] = useState<GeoJsonObject | null>(null);
 
   useEffect(() => {
     if (!visible || data) return;
-    fetch("/parcs-nationaux.geojson")
+    fetch(geojsonUrl)
       .then((r) => r.json())
       .then(setData)
       .catch(() => setData(null));
-  }, [visible, data]);
+  }, [visible, data, geojsonUrl]);
 
   return (
     <>
-      <div className="leaflet-top leaflet-left" style={{ marginTop: 70 }}>
+      <div className="leaflet-top leaflet-left" style={{ marginTop }}>
         <div className="leaflet-control leaflet-bar">
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
             style={{
               padding: "6px 10px",
-              background: visible ? "#2e7d32" : "#fff",
+              background: visible ? color : "#fff",
               color: visible ? "#fff" : "#000",
               border: "none",
               cursor: "pointer",
@@ -102,19 +110,46 @@ export function NationalParksToggle() {
               whiteSpace: "nowrap",
             }}
           >
-            🌳 Parcs nationaux
+            🌳 {label}
           </button>
         </div>
       </div>
       {visible && data && (
         <GeoJSON
           data={data}
-          style={{ color: "#2e7d32", weight: 1.5, fillColor: "#2e7d32", fillOpacity: 0.25 }}
+          style={{ color, weight: 1.5, fillColor: color, fillOpacity }}
           onEachFeature={(feature, layer) => {
             if (feature.properties?.name) layer.bindTooltip(feature.properties.name);
           }}
         />
       )}
     </>
+  );
+}
+
+/** Cœur des parcs nationaux (zone terrestre + marine, protection stricte). */
+export function NationalParksToggle() {
+  return (
+    <ParkLayerToggle
+      label="Parcs nationaux"
+      geojsonUrl="/parcs-nationaux.geojson"
+      color="#1b5e20"
+      fillOpacity={0.3}
+      marginTop={70}
+    />
+  );
+}
+
+/** Aires d'adhésion (zone périphérique, réglementation plus légère) - vert
+ * plus clair que le cœur de parc pour bien les distinguer. */
+export function NationalParksAdhesionToggle() {
+  return (
+    <ParkLayerToggle
+      label="Aires d'adhésion"
+      geojsonUrl="/parcs-nationaux-adhesion.geojson"
+      color="#8bc34a"
+      fillOpacity={0.25}
+      marginTop={104}
+    />
   );
 }
