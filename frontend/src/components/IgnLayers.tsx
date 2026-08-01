@@ -35,32 +35,7 @@ function ignUrl(layer: string, { format = "png", useScanKey = false }: IgnLayerO
   return `${host}?${params.toString()}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}`;
 }
 
-function NationalParksOverlay() {
-  const [data, setData] = useState<GeoJsonObject | null>(null);
-
-  useEffect(() => {
-    fetch("/parcs-nationaux.geojson")
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData(null));
-  }, []);
-
-  if (!data) return null;
-  return (
-    <LayersControl.Overlay name="Parcs nationaux">
-      <GeoJSON
-        data={data}
-        style={{ color: "#2e7d32", weight: 1.5, fillColor: "#2e7d32", fillOpacity: 0.25 }}
-        onEachFeature={(feature, layer) => {
-          if (feature.properties?.name) layer.bindTooltip(feature.properties.name);
-        }}
-      />
-    </LayersControl.Overlay>
-  );
-}
-
-/** Couches de fond de carte : OSM par défaut + IGN Plan/Photos aériennes/SCAN,
- * plus la couche superposable des parcs nationaux (case à cocher). */
+/** Couches de fond de carte : OSM par défaut + IGN Plan/Photos aériennes/SCAN. */
 export function BaseLayers() {
   return (
     <LayersControl position="topright">
@@ -91,7 +66,55 @@ export function BaseLayers() {
           maxZoom={18}
         />
       </LayersControl.BaseLayer>
-      <NationalParksOverlay />
     </LayersControl>
+  );
+}
+
+/** Bouton visible (coin haut-gauche de la carte) pour afficher/masquer la
+ * couche des parcs nationaux (vert semi-transparent), à placer comme enfant
+ * direct d'un MapContainer, à côté de BaseLayers. */
+export function NationalParksToggle() {
+  const [visible, setVisible] = useState(false);
+  const [data, setData] = useState<GeoJsonObject | null>(null);
+
+  useEffect(() => {
+    if (!visible || data) return;
+    fetch("/parcs-nationaux.geojson")
+      .then((r) => r.json())
+      .then(setData)
+      .catch(() => setData(null));
+  }, [visible, data]);
+
+  return (
+    <>
+      <div className="leaflet-top leaflet-left" style={{ marginTop: 70 }}>
+        <div className="leaflet-control leaflet-bar">
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            style={{
+              padding: "6px 10px",
+              background: visible ? "#2e7d32" : "#fff",
+              color: visible ? "#fff" : "#000",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 13,
+              whiteSpace: "nowrap",
+            }}
+          >
+            🌳 Parcs nationaux
+          </button>
+        </div>
+      </div>
+      {visible && data && (
+        <GeoJSON
+          data={data}
+          style={{ color: "#2e7d32", weight: 1.5, fillColor: "#2e7d32", fillOpacity: 0.25 }}
+          onEachFeature={(feature, layer) => {
+            if (feature.properties?.name) layer.bindTooltip(feature.properties.name);
+          }}
+        />
+      )}
+    </>
   );
 }
