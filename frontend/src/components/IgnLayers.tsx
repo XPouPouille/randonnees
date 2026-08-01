@@ -1,4 +1,6 @@
-import { LayersControl, TileLayer } from "react-leaflet";
+import { useEffect, useState } from "react";
+import { GeoJSON, LayersControl, TileLayer } from "react-leaflet";
+import type { GeoJsonObject } from "geojson";
 
 const IGN_MODE = import.meta.env.VITE_IGN_MODE || "geoplateforme";
 const IGN_API_KEY = import.meta.env.VITE_IGN_API_KEY || "";
@@ -33,7 +35,32 @@ function ignUrl(layer: string, { format = "png", useScanKey = false }: IgnLayerO
   return `${host}?${params.toString()}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}`;
 }
 
-/** Couches de fond de carte : OSM par défaut + IGN Plan/Photos aériennes/SCAN. */
+function NationalParksOverlay() {
+  const [data, setData] = useState<GeoJsonObject | null>(null);
+
+  useEffect(() => {
+    fetch("/parcs-nationaux.geojson")
+      .then((r) => r.json())
+      .then(setData)
+      .catch(() => setData(null));
+  }, []);
+
+  if (!data) return null;
+  return (
+    <LayersControl.Overlay name="Parcs nationaux">
+      <GeoJSON
+        data={data}
+        style={{ color: "#2e7d32", weight: 1.5, fillColor: "#2e7d32", fillOpacity: 0.25 }}
+        onEachFeature={(feature, layer) => {
+          if (feature.properties?.name) layer.bindTooltip(feature.properties.name);
+        }}
+      />
+    </LayersControl.Overlay>
+  );
+}
+
+/** Couches de fond de carte : OSM par défaut + IGN Plan/Photos aériennes/SCAN,
+ * plus la couche superposable des parcs nationaux (case à cocher). */
 export function BaseLayers() {
   return (
     <LayersControl position="topright">
@@ -64,6 +91,7 @@ export function BaseLayers() {
           maxZoom={18}
         />
       </LayersControl.BaseLayer>
+      <NationalParksOverlay />
     </LayersControl>
   );
 }
