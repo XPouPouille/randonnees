@@ -2,6 +2,7 @@ import type {
   ActivityType,
   DrawHikePayload,
   ElevationResultPoint,
+  EquipmentCategory,
   EquipmentItem,
   HikeDetail,
   HikeSummary,
@@ -122,22 +123,26 @@ export function deletePoi(poiId: number): Promise<void> {
   }).then((r) => handle(r));
 }
 
-// Liste de matériel : pas de token admin, ouverte à tous (à la demande).
+// Matériel : pas de token admin, ouvert à tous (à la demande).
 export function getEquipment(): Promise<EquipmentItem[]> {
   return fetch(`${API_BASE}/equipment`).then((r) => handle(r));
 }
 
-export function createEquipmentItem(name: string, quantity: number): Promise<EquipmentItem> {
+export function createEquipmentItem(
+  name: string,
+  quantity: number,
+  categoryId: number | null
+): Promise<EquipmentItem> {
   return fetch(`${API_BASE}/equipment`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, quantity }),
+    body: JSON.stringify({ name, quantity, category_id: categoryId }),
   }).then((r) => handle(r));
 }
 
 export function updateEquipmentItem(
   id: number,
-  payload: { name?: string; quantity?: number; checked?: boolean }
+  payload: { name?: string; quantity?: number; checked?: boolean; category_id?: number | null }
 ): Promise<EquipmentItem> {
   return fetch(`${API_BASE}/equipment/${id}`, {
     method: "PUT",
@@ -150,8 +155,40 @@ export function deleteEquipmentItem(id: number): Promise<void> {
   return fetch(`${API_BASE}/equipment/${id}`, { method: "DELETE" }).then((r) => handle(r));
 }
 
-export function reorderEquipment(ids: number[]): Promise<EquipmentItem[]> {
+export function reorderEquipment(categoryId: number | null, ids: number[]): Promise<EquipmentItem[]> {
   return fetch(`${API_BASE}/equipment/reorder`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ category_id: categoryId, ids }),
+  }).then((r) => handle(r));
+}
+
+export function getEquipmentCategories(): Promise<EquipmentCategory[]> {
+  return fetch(`${API_BASE}/equipment/categories`).then((r) => handle(r));
+}
+
+export function createEquipmentCategory(name: string): Promise<EquipmentCategory> {
+  return fetch(`${API_BASE}/equipment/categories`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  }).then((r) => handle(r));
+}
+
+export function renameEquipmentCategory(id: number, name: string): Promise<EquipmentCategory> {
+  return fetch(`${API_BASE}/equipment/categories/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  }).then((r) => handle(r));
+}
+
+export function deleteEquipmentCategory(id: number): Promise<void> {
+  return fetch(`${API_BASE}/equipment/categories/${id}`, { method: "DELETE" }).then((r) => handle(r));
+}
+
+export function reorderEquipmentCategories(ids: number[]): Promise<EquipmentCategory[]> {
+  return fetch(`${API_BASE}/equipment/categories/reorder`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ids }),

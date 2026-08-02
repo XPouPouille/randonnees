@@ -75,6 +75,19 @@ class PointOfInterest(Base):
     hike: Mapped["Hike"] = relationship(back_populates="pois")
 
 
+class EquipmentCategory(Base):
+    """Catégorie de matériel (ex : "Bivouac", "Cuisine"...). Supprimer une
+    catégorie ne supprime pas ses items, ils redeviennent "sans catégorie"."""
+
+    __tablename__ = "equipment_categories"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    position: Mapped[int] = mapped_column(default=0, server_default="0")
+
+    items: Mapped[list["EquipmentItem"]] = relationship(back_populates="category")
+
+
 class EquipmentItem(Base):
     """Liste de matériel (checklist) : indépendante des randonnées, sans
     protection par token admin (à la demande explicite - usage perso)."""
@@ -85,4 +98,11 @@ class EquipmentItem(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     quantity: Mapped[int] = mapped_column(default=1, server_default="1")
     checked: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Position au sein de sa catégorie (ou au sein du groupe "sans
+    # catégorie" si category_id est NULL) - pas un ordre global.
     position: Mapped[int] = mapped_column(default=0, server_default="0")
+    category_id: Mapped[int | None] = mapped_column(
+        ForeignKey("equipment_categories.id", ondelete="SET NULL"), nullable=True
+    )
+
+    category: Mapped["EquipmentCategory | None"] = relationship(back_populates="items")

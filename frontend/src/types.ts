@@ -61,12 +61,19 @@ export interface PoiResult {
   category: string;
 }
 
+export interface EquipmentCategory {
+  id: number;
+  name: string;
+  position: number;
+}
+
 export interface EquipmentItem {
   id: number;
   name: string;
   quantity: number;
   checked: boolean;
   position: number;
+  category_id: number | null;
 }
 
 export interface DrawHikePayload {

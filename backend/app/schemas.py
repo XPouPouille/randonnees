@@ -114,6 +114,21 @@ class PoiRequest(BaseModel):
     categories: list[str]
 
 
+class EquipmentCategoryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    position: int
+
+
+class EquipmentCategoryCreate(BaseModel):
+    name: str
+
+
+class EquipmentCategoryUpdate(BaseModel):
+    name: str | None = None
+
+
 class EquipmentItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -121,18 +136,26 @@ class EquipmentItemOut(BaseModel):
     quantity: int
     checked: bool
     position: int
+    category_id: int | None = None
 
 
 class EquipmentItemCreate(BaseModel):
     name: str
     quantity: int = Field(default=1, ge=1)
+    category_id: int | None = None
 
 
 class EquipmentItemUpdate(BaseModel):
     name: str | None = None
     quantity: int | None = Field(default=None, ge=1)
     checked: bool | None = None
+    category_id: int | None = None
 
 
 class EquipmentReorderRequest(BaseModel):
+    category_id: int | None = None
+    ids: list[int]
+
+
+class EquipmentCategoryReorderRequest(BaseModel):
     ids: list[int]
