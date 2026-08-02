@@ -28,6 +28,10 @@ export function EquipmentPage() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [addingCategory, setAddingCategory] = useState(false);
 
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState("");
+  const [renamingCategory, setRenamingCategory] = useState(false);
+
   useEffect(() => {
     Promise.all([getEquipmentCategories(), getEquipment()])
       .then(([cats, its]) => {
@@ -62,14 +66,25 @@ export function EquipmentPage() {
     }
   }
 
-  async function handleRenameCategory(cat: EquipmentCategory) {
-    const name = window.prompt("Nouveau nom de la catégorie", cat.name);
-    if (!name || !name.trim() || name.trim() === cat.name) return;
+function startRenamingCategory(cat: EquipmentCategory) {
+    setEditingCategoryId(cat.id);
+    setEditingCategoryName(cat.name);
+    setError(null);
+  }
+
+  async function handleRenameCategory(e: React.FormEvent) {
+    e.preventDefault();
+    if (editingCategoryId == null || !editingCategoryName.trim()) return;
+    setRenamingCategory(true);
+    setError(null);
     try {
-      const updated = await renameEquipmentCategory(cat.id, name.trim());
-      setCategories((prev) => prev.map((c) => (c.id === cat.id ? updated : c)));
+      const updated = await renameEquipmentCategory(editingCategoryId, editingCategoryName.trim());
+      setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      setEditingCategoryId(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRenamingCategory(false);
     }
   }
 
@@ -224,30 +239,47 @@ export function EquipmentPage() {
         const list = itemsFor(category ? category.id : null);
         return (
           <div key={category ? category.id : "none"} style={{ marginBottom: 24 }}>
-            <h3>
-              {category ? category.name : "Sans catégorie"}
-              {category && (
-                <>
-                  {" "}
-                  <button type="button" onClick={() => moveCategory(catIndex, -1)} disabled={catIndex === 0}>
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveCategory(catIndex, 1)}
-                    disabled={catIndex === categories.length - 1}
-                  >
-                    ↓
-                  </button>{" "}
-                  <button type="button" onClick={() => handleRenameCategory(category)}>
-                    ✏️
-                  </button>{" "}
-                  <button type="button" onClick={() => handleDeleteCategory(category)}>
-                    🗑️ catégorie
-                  </button>
-                </>
-              )}
-            </h3>
+            {category && editingCategoryId === category.id ? (
+              <form onSubmit={handleRenameCategory} style={{ marginBottom: 8 }}>
+                <input
+                  value={editingCategoryName}
+                  onChange={(e) => setEditingCategoryName(e.target.value)}
+                  autoFocus
+                  style={{ marginRight: 8 }}
+                />
+                <button type="submit" disabled={renamingCategory || !editingCategoryName.trim()}>
+                  {renamingCategory ? "Enregistrement…" : "OK"}
+                </button>{" "}
+                <button type="button" onClick={() => setEditingCategoryId(null)}>
+                  Annuler
+                </button>
+              </form>
+            ) : (
+              <h3>
+                {category ? category.name : "Sans catégorie"}
+                {category && (
+                  <>
+                    {" "}
+                    <button type="button" onClick={() => moveCategory(catIndex, -1)} disabled={catIndex === 0}>
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveCategory(catIndex, 1)}
+                      disabled={catIndex === categories.length - 1}
+                    >
+                      ↓
+                    </button>{" "}
+                    <button type="button" onClick={() => startRenamingCategory(category)}>
+                      ✏️
+                    </button>{" "}
+                    <button type="button" onClick={() => handleDeleteCategory(category)}>
+                      🗑️ catégorie
+                    </button>
+                  </>
+                )}
+              </h3>
+            )}
 
             {list.length === 0 ? (
               <p>
