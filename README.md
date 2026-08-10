@@ -132,6 +132,7 @@ Traefik.
 | `CORS_ORIGINS` | Origines autorisées côté API, séparées par des virgules |
 | `IGN_MODE` | `geoplateforme` (par défaut, sans clé) ou `key` |
 | `IGN_API_KEY` | Clé Géoportail, utilisée uniquement si `IGN_MODE=key` |
+| `THUNDERFOREST_API_KEY` | Clé pour le fond de carte OpenCycleMap (optionnelle, voir ci-dessous) |
 | `TRAEFIK_DOMAIN` | Nom de domaine public utilisé par le label `traefik.http.routers.randonnees.rule` |
 | `FRONTEND_PORT` | Port exposé sur l'hôte pour le site (défaut `80`), inutilisé si accès uniquement via Traefik |
 
@@ -143,6 +144,16 @@ Traefik.
 3. Renseigner `IGN_MODE=key` et `IGN_API_KEY=<votre_clé>` dans `.env`, puis
    reconstruire le frontend (`docker compose up -d --build frontend`), la clé
    étant injectée au moment du build.
+
+### Obtenir une clé OpenCycleMap (optionnel)
+
+Le fond de carte "OpenCycleMap" (Thunderforest) apparaît dans le sélecteur
+même sans clé, mais les tuiles ne se chargeront pas tant qu'une clé n'est
+pas renseignée :
+
+1. Créer une clé gratuite sur [thunderforest.com/docs/apikeys](https://www.thunderforest.com/docs/apikeys/).
+2. Renseigner `THUNDERFOREST_API_KEY=<votre_clé>` dans `.env`, puis
+   reconstruire le frontend (`docker compose up -d --build frontend`).
 
 ## Mise à jour du site
 

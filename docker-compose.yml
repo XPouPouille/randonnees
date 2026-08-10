@@ -34,6 +34,7 @@ services:
       args:
         VITE_IGN_MODE: ${IGN_MODE}
         VITE_IGN_API_KEY: ${IGN_API_KEY}
+        VITE_THUNDERFOREST_API_KEY: ${THUNDERFOREST_API_KEY}
     restart: unless-stopped
     depends_on:
       - backend

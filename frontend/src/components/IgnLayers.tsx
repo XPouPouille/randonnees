@@ -5,6 +5,10 @@ import type { GeoJsonObject } from "geojson";
 const IGN_MODE = import.meta.env.VITE_IGN_MODE || "geoplateforme";
 const IGN_API_KEY = import.meta.env.VITE_IGN_API_KEY || "";
 
+// OpenCycleMap (Thunderforest) exige une clé API (gratuite, thunderforest.com/docs/apikeys)
+// contrairement aux couches IGN ci-dessus : sans clé configurée les tuiles ne se chargent pas.
+const THUNDERFOREST_API_KEY = import.meta.env.VITE_THUNDERFOREST_API_KEY || "";
+
 // Clé publique historique de l'IGN pour les cartes SCAN (pas de compte
 // requis, distribuée officiellement pour un usage libre depuis des années -
 // la couche "GEOGRAPHICALGRIDSYSTEMS.MAPS" n'est pas exposée sur l'endpoint
@@ -64,6 +68,13 @@ export function BaseLayers() {
           attribution='&copy; <a href="https://www.ign.fr">IGN</a> - Géoplateforme'
           url={ignUrl("GEOGRAPHICALGRIDSYSTEMS.MAPS", { format: "jpeg", useScanKey: true })}
           maxZoom={18}
+        />
+      </LayersControl.BaseLayer>
+      <LayersControl.BaseLayer name="OpenCycleMap">
+        <TileLayer
+          attribution='&copy; <a href="https://www.thunderforest.com">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url={`https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png${THUNDERFOREST_API_KEY ? `?apikey=${THUNDERFOREST_API_KEY}` : ""}`}
+          maxZoom={22}
         />
       </LayersControl.BaseLayer>
     </LayersControl>
