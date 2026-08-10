@@ -3,6 +3,7 @@ import { CircleMarker, MapContainer, Marker, Polyline, Popup } from "react-leafl
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { addPoisToHike, deleteHike, deletePoi, getHike, getPoi, updateHike } from "../api";
 import { BaseLayers, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
+import { MapLegend } from "../components/MapLegend";
 import { ElevationChart } from "../components/ElevationChart";
 import { PoiSearchControls } from "../components/PoiSearchControls";
 import { ACTIVITY_COLORS, ACTIVITY_LABELS } from "../activity";
@@ -299,6 +300,7 @@ export function HikeDetailPage() {
         <BaseLayers />
         <NationalParksToggle />
         <NationalParksAdhesionToggle />
+        <MapLegend />
         {coords && <Polyline positions={coords} pathOptions={{ color: ACTIVITY_COLORS[hike.activity_type], weight: 4 }} />}
         {hike.start_lat != null && hike.start_lon != null && (
           <Marker position={[hike.start_lat, hike.start_lon]} />
