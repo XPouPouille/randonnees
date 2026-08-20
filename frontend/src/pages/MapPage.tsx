@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, Marker, Polyline, Popup } from "react-leaflet";
 import { Link } from "react-router-dom";
 import { getHikes } from "../api";
-import { BaseLayers, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
+import { BaseLayers, FullscreenToggle, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
 import { MapLegend } from "../components/MapLegend";
 import { HikeFilters } from "../components/HikeFilters";
 import { useHikeFilters } from "../filters";
@@ -51,6 +51,7 @@ export function MapPage() {
         <NationalParksToggle />
         <NationalParksAdhesionToggle />
         <MapLegend />
+        <FullscreenToggle />
         {filtered.map((hike) => {
           const coords = hike.track_geojson?.coordinates.map(([lon, lat]) => [lat, lon] as [number, number]);
           if (!coords || coords.length < 2) return null;

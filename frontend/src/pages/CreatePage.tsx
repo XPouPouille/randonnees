@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Polyline, Popup, Tooltip, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import { createDrawnHike, getElevationProfile, getPoi, getRoute } from "../api";
-import { BaseLayers, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
+import { BaseLayers, FullscreenToggle, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
 import { MapLegend } from "../components/MapLegend";
 import { ElevationChart } from "../components/ElevationChart";
 import { PoiSearchControls } from "../components/PoiSearchControls";
@@ -42,6 +42,7 @@ export function CreatePage() {
 
   const [profile, setProfile] = useState<ElevationResultPoint[] | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [hoveredPoint, setHoveredPoint] = useState<{ lat: number; lon: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -79,6 +80,24 @@ export function CreatePage() {
     return straightLine;
   }, [routedPath, straightLine]);
 
+  // Recalcule le profil altimétrique automatiquement à chaque changement de
+  // tracé (attend la fin du routage pour éviter un double calcul).
+  useEffect(() => {
+    if (points.length < 2 || routing) {
+      if (points.length < 2) setProfile(null);
+      return;
+    }
+    setProfileLoading(true);
+    const forProfile = routedPath && routedPath.length >= 2 ? routedPath : points;
+    const timeout = setTimeout(() => {
+      getElevationProfile(samplePoints(forProfile, PREVIEW_SAMPLE_MAX))
+        .then(setProfile)
+        .catch((err) => setError(err instanceof Error ? err.message : String(err)))
+        .finally(() => setProfileLoading(false));
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [points, routedPath, routing]);
+
   function handleMapClick(latlng: LatLon) {
     setProfile(null);
     setPoints((prev) => {
@@ -113,21 +132,6 @@ export function CreatePage() {
     setSelectedIndex(null);
     setInsertMode("append");
     setProfile(null);
-  }
-
-  async function handlePreview() {
-    if (points.length < 2) return;
-    setProfileLoading(true);
-    setError(null);
-    try {
-      const forProfile = routedPath && routedPath.length >= 2 ? routedPath : points;
-      const result = await getElevationProfile(samplePoints(forProfile, PREVIEW_SAMPLE_MAX));
-      setProfile(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setProfileLoading(false);
-    }
   }
 
   function toggleCategory(key: string) {
@@ -188,6 +192,16 @@ export function CreatePage() {
       return { distance_km: cumulative, elevation_m: p.elevation_m, lat: p.lat, lon: p.lon };
     });
   }, [profile]);
+
+  const elevationGainM = useMemo(() => {
+    if (!elevationProfileForChart) return null;
+    let gain = 0;
+    for (let i = 1; i < elevationProfileForChart.length; i++) {
+      const delta = elevationProfileForChart[i].elevation_m - elevationProfileForChart[i - 1].elevation_m;
+      if (delta > 0) gain += delta;
+    }
+    return gain;
+  }, [elevationProfileForChart]);
 
   return (
     <div>
@@ -275,6 +289,7 @@ export function CreatePage() {
         <NationalParksToggle />
         <NationalParksAdhesionToggle />
         <MapLegend />
+        <FullscreenToggle />
         <ClickHandler onClick={handleMapClick} />
         {displayLine.length >= 2 && <Polyline positions={displayLine} pathOptions={{ color, weight: 3 }} />}
         {points.map((p, i) => (
@@ -310,6 +325,13 @@ export function CreatePage() {
             </Popup>
           </CircleMarker>
         ))}
+        {hoveredPoint && (
+          <CircleMarker
+            center={[hoveredPoint.lat, hoveredPoint.lon]}
+            radius={8}
+            pathOptions={{ color: "#ff8f00", fillColor: "#ff8f00", fillOpacity: 1, weight: 2 }}
+          />
+        )}
       </MapContainer>
 
       <h3>Points ({points.length})</h3>
@@ -368,16 +390,18 @@ export function CreatePage() {
         onClearFound={() => setPois([])}
       />
 
-      <p>
-        <button type="button" onClick={handlePreview} disabled={points.length < 2 || profileLoading}>
-          {profileLoading ? "Calcul…" : "Aperçu du dénivelé"}
-        </button>
-      </p>
+      {profileLoading && <p><em>Calcul du profil altimétrique…</em></p>}
 
       {elevationProfileForChart && (
         <>
-          <h3>Profil topologique (aperçu)</h3>
-          <ElevationChart profile={elevationProfileForChart} />
+          <h3>
+            Profil topologique (aperçu)
+            {elevationGainM != null && <> — D+ : +{Math.round(elevationGainM)} m</>}
+          </h3>
+          <ElevationChart
+            profile={elevationProfileForChart}
+            onHover={(p) => setHoveredPoint(p ? { lat: p.lat, lon: p.lon } : null)}
+          />
         </>
       )}
 

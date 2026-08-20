@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { GeoJSON, LayersControl, TileLayer } from "react-leaflet";
+import { GeoJSON, LayersControl, TileLayer, useMap } from "react-leaflet";
 import type { GeoJsonObject } from "geojson";
 
 const IGN_MODE = import.meta.env.VITE_IGN_MODE || "geoplateforme";
@@ -68,6 +68,13 @@ export function BaseLayers() {
           attribution='&copy; <a href="https://www.ign.fr">IGN</a> - Géoplateforme'
           url={ignUrl("GEOGRAPHICALGRIDSYSTEMS.MAPS", { format: "jpeg", useScanKey: true })}
           maxZoom={18}
+        />
+      </LayersControl.BaseLayer>
+      <LayersControl.BaseLayer name="IGN - TOP25">
+        <TileLayer
+          attribution='&copy; <a href="https://www.ign.fr">IGN</a> - Géoplateforme'
+          url={ignUrl("GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN25TOUR", { format: "jpeg", useScanKey: true })}
+          maxZoom={17}
         />
       </LayersControl.BaseLayer>
       <LayersControl.BaseLayer name="OpenCycleMap">
@@ -162,5 +169,55 @@ export function NationalParksAdhesionToggle() {
       fillOpacity={0.25}
       marginTop={104}
     />
+  );
+}
+
+/** Bouton plein écran (API Fullscreen native du navigateur) sur le conteneur
+ * de la carte, à placer comme enfant direct d'un MapContainer. */
+export function FullscreenToggle() {
+  const map = useMap();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const container = map.getContainer();
+    function handleChange() {
+      const active = document.fullscreenElement === container;
+      setIsFullscreen(active);
+      // La carte doit recalculer sa taille une fois la transition terminée.
+      setTimeout(() => map.invalidateSize(), 100);
+    }
+    document.addEventListener("fullscreenchange", handleChange);
+    return () => document.removeEventListener("fullscreenchange", handleChange);
+  }, [map]);
+
+  function toggle() {
+    const container = map.getContainer();
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      container.requestFullscreen();
+    }
+  }
+
+  return (
+    <div className="leaflet-top leaflet-left" style={{ marginTop: 172 }}>
+      <div className="leaflet-control leaflet-bar">
+        <button
+          type="button"
+          onClick={toggle}
+          style={{
+            padding: "6px 10px",
+            background: "#fff",
+            color: "#000",
+            border: "none",
+            cursor: "pointer",
+            fontSize: 13,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {isFullscreen ? "⛶ Quitter le plein écran" : "⛶ Plein écran"}
+        </button>
+      </div>
+    </div>
   );
 }

@@ -1,10 +1,24 @@
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { ElevationPoint } from "../types";
 
-export function ElevationChart({ profile }: { profile: ElevationPoint[] }) {
+interface Props {
+  profile: ElevationPoint[];
+  onHover?: (point: ElevationPoint | null) => void;
+}
+
+export function ElevationChart({ profile, onHover }: Props) {
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={profile} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+      <LineChart
+        data={profile}
+        margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+        onMouseMove={(state) => {
+          if (!onHover) return;
+          const point = state?.activePayload?.[0]?.payload as ElevationPoint | undefined;
+          onHover(point ?? null);
+        }}
+        onMouseLeave={() => onHover?.(null)}
+      >
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis
           dataKey="distance_km"

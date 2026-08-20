@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CircleMarker, MapContainer, Marker, Polyline, Popup } from "react-leaflet";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { addPoisToHike, deleteHike, deletePoi, getHike, getPoi, updateHike } from "../api";
-import { BaseLayers, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
+import { BaseLayers, FullscreenToggle, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
 import { MapLegend } from "../components/MapLegend";
 import { ElevationChart } from "../components/ElevationChart";
 import { PoiSearchControls } from "../components/PoiSearchControls";
@@ -51,6 +51,7 @@ export function HikeDetailPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [hoveredPoint, setHoveredPoint] = useState<{ lat: number; lon: number } | null>(null);
   const [poiSearchOpen, setPoiSearchOpen] = useState(false);
   const [poiRadius, setPoiRadius] = useState(1000);
   const [poiCategories, setPoiCategories] = useState<Set<string>>(new Set(DEFAULT_POI_CATEGORIES));
@@ -301,6 +302,7 @@ export function HikeDetailPage() {
         <NationalParksToggle />
         <NationalParksAdhesionToggle />
         <MapLegend />
+        <FullscreenToggle />
         {coords && <Polyline positions={coords} pathOptions={{ color: ACTIVITY_COLORS[hike.activity_type], weight: 4 }} />}
         {hike.start_lat != null && hike.start_lon != null && (
           <Marker position={[hike.start_lat, hike.start_lon]} />
@@ -341,12 +343,22 @@ export function HikeDetailPage() {
             </Popup>
           </CircleMarker>
         ))}
+        {hoveredPoint && (
+          <CircleMarker
+            center={[hoveredPoint.lat, hoveredPoint.lon]}
+            radius={8}
+            pathOptions={{ color: "#ff8f00", fillColor: "#ff8f00", fillOpacity: 1, weight: 2 }}
+          />
+        )}
       </MapContainer>
 
       {hike.elevation_profile && hike.elevation_profile.length > 0 && (
         <>
           <h3>Profil topologique</h3>
-          <ElevationChart profile={hike.elevation_profile} />
+          <ElevationChart
+            profile={hike.elevation_profile}
+            onHover={(p) => setHoveredPoint(p ? { lat: p.lat, lon: p.lon } : null)}
+          />
         </>
       )}
 
