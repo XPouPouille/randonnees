@@ -14,8 +14,30 @@ import type { LatLon } from "./geo";
 const API_BASE = "/api";
 
 function adminHeaders(): HeadersInit {
-  const token = localStorage.getItem("admin_token");
-  return token ? { "X-Admin-Token": token } : {};
+  const token = localStorage.getItem("auth_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  email: string;
+}
+
+export function registerAccount(email: string, password: string): Promise<AuthResponse> {
+  return fetch(`${API_BASE}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  }).then((r) => handle(r));
+}
+
+export function loginAccount(email: string, password: string): Promise<AuthResponse> {
+  return fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  }).then((r) => handle(r));
 }
 
 async function handle<T>(res: Response): Promise<T> {

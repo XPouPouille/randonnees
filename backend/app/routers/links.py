@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.auth import require_admin
+from app.auth import get_current_user
 from app.database import get_db
 from app.models import ExternalLink, Hike
 from app.schemas import ExternalLinkCreate, ExternalLinkOut
 
-router = APIRouter(tags=["links"], dependencies=[Depends(require_admin)])
+router = APIRouter(tags=["links"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/api/hikes/{hike_id}/links", response_model=ExternalLinkOut)

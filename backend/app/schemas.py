@@ -1,8 +1,30 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 NOTES_MAX_LENGTH = 2000
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=200)
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    email: str
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    email: str
 
 
 class ExternalLinkBase(BaseModel):

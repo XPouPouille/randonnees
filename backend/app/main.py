@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routers import editor, equipment, hikes, links
+from app.routers import auth, editor, equipment, hikes, links
 
 app = FastAPI(title="Randonnées API", version="2.0.0")
 
@@ -15,6 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(hikes.router)
 app.include_router(links.router)
 app.include_router(editor.router)

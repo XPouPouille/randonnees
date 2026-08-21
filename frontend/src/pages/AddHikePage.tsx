@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { addLink, createHike } from "../api";
+import { useAuth } from "../auth";
 import type { ActivityType } from "../types";
 
 interface LinkRow {
@@ -13,7 +14,7 @@ const PLATFORMS = ["komoot", "alltrails", "garmin", "visorando", "other"];
 
 export function AddHikePage() {
   const navigate = useNavigate();
-  const [adminToken, setAdminToken] = useState(localStorage.getItem("admin_token") || "");
+  const { email } = useAuth();
   const [name, setName] = useState("");
   const [activityType, setActivityType] = useState<ActivityType>("rando");
   const [description, setDescription] = useState("");
@@ -38,8 +39,8 @@ export function AddHikePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!email) return;
     setError(null);
-    localStorage.setItem("admin_token", adminToken);
 
     const formData = new FormData();
     formData.set("name", name);
@@ -68,15 +69,14 @@ export function AddHikePage() {
   return (
     <div>
       <h2>Ajouter une randonnée</h2>
-      <form onSubmit={handleSubmit}>
-        <p>
-          <label>
-            Token admin (nécessaire pour publier)
-            <br />
-            <input type="password" value={adminToken} onChange={(e) => setAdminToken(e.target.value)} required />
-          </label>
-        </p>
 
+      {!email && (
+        <p style={{ padding: 8, border: "1px solid #ddd", borderRadius: 6 }}>
+          <Link to="/connexion">Connecte-toi</Link> pour pouvoir publier une randonnée.
+        </p>
+      )}
+
+      <form onSubmit={handleSubmit}>
         <p>
           <label>
             Nom
@@ -164,7 +164,7 @@ export function AddHikePage() {
         {error && <p style={{ color: "red" }}>{error}</p>}
 
         <p>
-          <button type="submit" disabled={submitting}>
+          <button type="submit" disabled={submitting || !email}>
             {submitting ? "Envoi…" : "Publier la randonnée"}
           </button>
         </p>

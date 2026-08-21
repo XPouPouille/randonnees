@@ -2,7 +2,7 @@ import requests
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.auth import require_admin
+from app.auth import get_current_user
 from app.database import get_db
 from app.gpx_utils import build_gpx_bytes
 from app.models import Hike, PointOfInterest
@@ -71,7 +71,7 @@ def get_poi(payload: PoiRequest):
     return [PoiOut(**r) for r in results]
 
 
-@router.post("/hikes/draw", response_model=HikeOut, dependencies=[Depends(require_admin)])
+@router.post("/hikes/draw", response_model=HikeOut, dependencies=[Depends(get_current_user)])
 def create_drawn_hike(payload: DrawHikeCreate, db: Session = Depends(get_db)):
     if len(payload.points) < 2:
         raise HTTPException(status_code=422, detail="Il faut au moins 2 points pour former un tracé")
@@ -112,7 +112,7 @@ def create_drawn_hike(payload: DrawHikeCreate, db: Session = Depends(get_db)):
     return hike_to_out(hike)
 
 
-@router.post("/hikes/{hike_id}/pois", response_model=HikeOut, dependencies=[Depends(require_admin)])
+@router.post("/hikes/{hike_id}/pois", response_model=HikeOut, dependencies=[Depends(get_current_user)])
 def add_pois(hike_id: int, payload: list[PoiOut], db: Session = Depends(get_db)):
     hike = db.get(Hike, hike_id)
     if not hike:
@@ -129,7 +129,7 @@ def add_pois(hike_id: int, payload: list[PoiOut], db: Session = Depends(get_db))
     return hike_to_out(hike)
 
 
-@router.delete("/pois/{poi_id}", status_code=204, dependencies=[Depends(require_admin)])
+@router.delete("/pois/{poi_id}", status_code=204, dependencies=[Depends(get_current_user)])
 def delete_poi(poi_id: int, db: Session = Depends(get_db)):
     poi = db.get(PointOfInterest, poi_id)
     if not poi:

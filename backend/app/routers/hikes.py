@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session, defer
 
-from app.auth import require_admin
+from app.auth import get_current_user
 from app.database import get_db
 from app.models import Hike
 from app.schemas import HikeOut, HikeSummary, HikeUpdate
@@ -31,7 +31,7 @@ def get_hike(hike_id: int, db: Session = Depends(get_db)):
     return hike_to_out(hike)
 
 
-@router.post("", response_model=HikeOut, dependencies=[Depends(require_admin)])
+@router.post("", response_model=HikeOut, dependencies=[Depends(get_current_user)])
 async def create_hike(
     name: str = Form(...),
     description: str | None = Form(None),
@@ -56,7 +56,7 @@ async def create_hike(
     return hike_to_out(hike)
 
 
-@router.put("/{hike_id}", response_model=HikeOut, dependencies=[Depends(require_admin)])
+@router.put("/{hike_id}", response_model=HikeOut, dependencies=[Depends(get_current_user)])
 def update_hike(hike_id: int, payload: HikeUpdate, db: Session = Depends(get_db)):
     hike = db.get(Hike, hike_id)
     if not hike:
@@ -68,7 +68,7 @@ def update_hike(hike_id: int, payload: HikeUpdate, db: Session = Depends(get_db)
     return hike_to_out(hike)
 
 
-@router.delete("/{hike_id}", status_code=204, dependencies=[Depends(require_admin)])
+@router.delete("/{hike_id}", status_code=204, dependencies=[Depends(get_current_user)])
 def delete_hike(hike_id: int, db: Session = Depends(get_db)):
     hike = db.get(Hike, hike_id)
     if not hike:
@@ -79,7 +79,7 @@ def delete_hike(hike_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
-@router.post("/{hike_id}/gpx", response_model=HikeOut, dependencies=[Depends(require_admin)])
+@router.post("/{hike_id}/gpx", response_model=HikeOut, dependencies=[Depends(get_current_user)])
 async def upload_gpx(hike_id: int, gpx_file: UploadFile = File(...), db: Session = Depends(get_db)):
     hike = db.get(Hike, hike_id)
     if not hike:

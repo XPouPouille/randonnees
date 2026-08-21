@@ -87,7 +87,7 @@ docker compose up -d --build
 git clone https://github.com/XPouPouille/randonnees.git
 cd randonnees
 cp .env.example .env
-# éditer .env : mots de passe DB, ADMIN_TOKEN, CORS_ORIGINS, IGN_MODE/IGN_API_KEY, FRONTEND_PORT
+# éditer .env : mots de passe DB, JWT_SECRET, CORS_ORIGINS, IGN_MODE/IGN_API_KEY, FRONTEND_PORT
 
 docker compose up -d --build
 ```
@@ -128,7 +128,7 @@ Traefik.
 |---|---|
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Identifiants PostgreSQL |
 | `DATABASE_URL` | URL SQLAlchemy vers la base (doit correspondre aux identifiants ci-dessus) |
-| `ADMIN_TOKEN` | Token à saisir dans le formulaire "Ajouter une randonnée" pour publier/modifier/supprimer |
+| `JWT_SECRET` | Secret de signature des sessions utilisateur (JWT) - générer une valeur aléatoire en prod |
 | `CORS_ORIGINS` | Origines autorisées côté API, séparées par des virgules |
 | `IGN_MODE` | `geoplateforme` (par défaut, sans clé) ou `key` |
 | `IGN_API_KEY` | Clé Géoportail, utilisée uniquement si `IGN_MODE=key` |

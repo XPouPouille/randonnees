@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Polyline, Popup, Tooltip, useMapEvents } from "react-leaflet";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { createDrawnHike, getElevationProfile, getPoi, getRoute } from "../api";
+import { useAuth } from "../auth";
 import { BaseLayers, FullscreenToggle, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
 import { MapLegend } from "../components/MapLegend";
 import { ElevationChart } from "../components/ElevationChart";
@@ -30,11 +31,11 @@ function ClickHandler({ onClick }: { onClick: (latlng: LatLon) => void }) {
 
 export function CreatePage() {
   const navigate = useNavigate();
+  const { email } = useAuth();
   const [name, setName] = useState("");
   const [activityType, setActivityType] = useState<ActivityType>("rando");
   const [difficulty, setDifficulty] = useState("");
   const [description, setDescription] = useState("");
-  const [adminToken, setAdminToken] = useState(localStorage.getItem("admin_token") || "");
 
   const [points, setPoints] = useState<LatLon[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -163,8 +164,7 @@ export function CreatePage() {
   }
 
   async function handleSave() {
-    if (!name.trim() || points.length < 2) return;
-    localStorage.setItem("admin_token", adminToken);
+    if (!name.trim() || points.length < 2 || !email) return;
     setSaving(true);
     setError(null);
     try {
@@ -207,13 +207,12 @@ export function CreatePage() {
     <div>
       <h2>Créer un tracé</h2>
 
-      <p>
-        <label>
-          Token admin
-          <br />
-          <input type="password" value={adminToken} onChange={(e) => setAdminToken(e.target.value)} required />
-        </label>
-      </p>
+      {!email && (
+        <p style={{ padding: 8, border: "1px solid #ddd", borderRadius: 6 }}>
+          <Link to="/connexion">Connecte-toi</Link> pour pouvoir enregistrer ce tracé (tu peux quand même le
+          dessiner et prévisualiser le dénivelé sans être connecté).
+        </p>
+      )}
 
       <p>
         <label>
@@ -408,7 +407,7 @@ export function CreatePage() {
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       <p>
-        <button type="button" onClick={handleSave} disabled={saving || !name.trim() || points.length < 2}>
+        <button type="button" onClick={handleSave} disabled={saving || !name.trim() || points.length < 2 || !email}>
           {saving ? "Enregistrement…" : "Enregistrer le tracé"}
         </button>
       </p>

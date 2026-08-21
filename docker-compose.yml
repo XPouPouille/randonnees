@@ -20,7 +20,7 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS}
     volumes:
       - uploads_data:/app/uploads

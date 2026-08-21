@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { CircleMarker, MapContainer, Marker, Polyline, Popup } from "react-leaflet";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { addPoisToHike, deleteHike, deletePoi, getHike, getPoi, updateHike } from "../api";
+import { useAuth } from "../auth";
 import { BaseLayers, FullscreenToggle, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
 import { MapLegend } from "../components/MapLegend";
 import { ElevationChart } from "../components/ElevationChart";
@@ -43,10 +44,10 @@ function toEditForm(hike: HikeDetail): EditForm {
 export function HikeDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { email } = useAuth();
   const [hike, setHike] = useState<HikeDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [adminToken, setAdminToken] = useState(localStorage.getItem("admin_token") || "");
   const [form, setForm] = useState<EditForm | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -87,7 +88,6 @@ export function HikeDetailPage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!form || !hike) return;
-    localStorage.setItem("admin_token", adminToken);
     setSaving(true);
     setSaveError(null);
     try {
@@ -146,7 +146,6 @@ export function HikeDetailPage() {
 
   async function handleAddFoundPois() {
     if (!hike || foundPois.length === 0) return;
-    localStorage.setItem("admin_token", adminToken);
     setPoiAdding(true);
     setPoiError(null);
     try {
@@ -162,7 +161,6 @@ export function HikeDetailPage() {
 
   async function handleDeleteSavedPoi(poiId: number | null | undefined) {
     if (!hike || poiId == null) return;
-    localStorage.setItem("admin_token", adminToken);
     try {
       await deletePoi(poiId);
       setHike({ ...hike, pois: hike.pois.filter((p) => p.id !== poiId) });
@@ -180,13 +178,6 @@ export function HikeDetailPage() {
       {editing && form ? (
         <form onSubmit={handleSave}>
           <h2>Modifier la randonnée</h2>
-          <p>
-            <label>
-              Token admin
-              <br />
-              <input type="password" value={adminToken} onChange={(e) => setAdminToken(e.target.value)} required />
-            </label>
-          </p>
           <p>
             <label>
               Nom
@@ -319,9 +310,11 @@ export function HikeDetailPage() {
               <br />
               {POI_LABELS[poi.category] || poi.category}
               <br />
-              <button type="button" onClick={() => handleDeleteSavedPoi(poi.id)}>
-                Retirer
-              </button>
+              {email && (
+                <button type="button" onClick={() => handleDeleteSavedPoi(poi.id)}>
+                  Retirer
+                </button>
+              )}
             </Popup>
           </CircleMarker>
         ))}
@@ -368,22 +361,17 @@ export function HikeDetailPage() {
         {hike.pois.map((poi, i) => (
           <li key={i}>
             {poi.name || POI_LABELS[poi.category] || poi.category} ({POI_LABELS[poi.category] || poi.category}){" "}
-            <button type="button" onClick={() => handleDeleteSavedPoi(poi.id)}>
-              Retirer
-            </button>
+            {email && (
+              <button type="button" onClick={() => handleDeleteSavedPoi(poi.id)}>
+                Retirer
+              </button>
+            )}
           </li>
         ))}
       </ul>
 
       {poiSearchOpen ? (
         <>
-          <p>
-            <label>
-              Token admin
-              <br />
-              <input type="password" value={adminToken} onChange={(e) => setAdminToken(e.target.value)} />
-            </label>
-          </p>
           <PoiSearchControls
             radius={poiRadius}
             setRadius={setPoiRadius}
@@ -395,8 +383,13 @@ export function HikeDetailPage() {
             onClearFound={() => setFoundPois([])}
           />
           {poiError && <p style={{ color: "red" }}>{poiError}</p>}
+          {!email && foundPois.length > 0 && (
+            <p>
+              <Link to="/connexion">Connecte-toi</Link> pour enregistrer ces points d'intérêt.
+            </p>
+          )}
           <p>
-            {foundPois.length > 0 && (
+            {email && foundPois.length > 0 && (
               <button type="button" onClick={handleAddFoundPois} disabled={poiAdding}>
                 {poiAdding ? "Ajout…" : `Ajouter ces ${foundPois.length} point(s) d'intérêt`}
               </button>
@@ -444,10 +437,15 @@ export function HikeDetailPage() {
         </p>
       )}
 
-      {!editing && (
+      {!editing && email && (
         <p>
           <button onClick={startEditing}>Modifier</button>{" "}
           <button onClick={handleDelete}>Supprimer cette randonnée</button>
+        </p>
+      )}
+      {!editing && !email && (
+        <p>
+          <Link to="/connexion">Connecte-toi</Link> pour modifier ou supprimer cette randonnée.
         </p>
       )}
     </div>
