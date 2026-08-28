@@ -84,6 +84,13 @@ export function BaseLayers() {
           maxZoom={22}
         />
       </LayersControl.BaseLayer>
+      <LayersControl.BaseLayer name="OpenTopoMap (Europe)">
+        <TileLayer
+          attribution='Kartendaten: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, SRTM | Kartendarstellung: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)'
+          url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+          maxZoom={17}
+        />
+      </LayersControl.BaseLayer>
     </LayersControl>
   );
 }
@@ -219,5 +226,124 @@ export function FullscreenToggle() {
         </button>
       </div>
     </div>
+  );
+}
+
+interface CountryLayerDef {
+  key: string;
+  label: string;
+  url: string;
+  attribution: string;
+  maxZoom: number;
+}
+
+/** Cartes topo officielles de quelques pays voisins, gardées hors du
+ * sélecteur de fond de carte principal (services keyless mais moins fiables
+ * que l'IGN) et ajoutées seulement à la demande via ce bouton. */
+const COUNTRY_LAYERS: CountryLayerDef[] = [
+  {
+    key: "ch",
+    label: "🇨🇭 Suisse (swisstopo)",
+    url: "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg",
+    attribution: '&copy; <a href="https://www.swisstopo.admin.ch">swisstopo</a>',
+    maxZoom: 18,
+  },
+  {
+    key: "de",
+    label: "🇩🇪 Allemagne (BKG TopPlusOpen)",
+    url: "https://sgx.geodatenzentrum.de/wmts_topplus_open/tile/1.0.0/web/default/WEBMERCATOR/{z}/{y}/{x}.png",
+    attribution: '&copy; <a href="https://www.bkg.bund.de">BKG</a>',
+    maxZoom: 18,
+  },
+  {
+    key: "at",
+    label: "🇦🇹 Autriche (basemap.at)",
+    url: "https://maps.wien.gv.at/basemap/geolandbasemap/normal/google3857/{z}/{y}/{x}.png",
+    attribution: '&copy; <a href="https://basemap.at">basemap.at</a>',
+    maxZoom: 19,
+  },
+  {
+    key: "es",
+    label: "🇪🇸 Espagne (IGN)",
+    url: "https://www.ign.es/wmts/mapa-raster?service=WMTS&request=getTile&version=1.0.0&layer=MTN&style=default&TileMatrixSet=GoogleMapsCompatible&format=image/jpeg&TileMatrix={z}&TileCol={x}&TileRow={y}",
+    attribution: '&copy; <a href="https://www.ign.es">IGN España</a>',
+    maxZoom: 18,
+  },
+  {
+    key: "nl",
+    label: "🇳🇱 Pays-Bas (PDOK)",
+    url: "https://service.pdok.nl/kadaster/brt-achtergrondkaart/wmts/v2_0?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=standaard&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX=EPSG:3857:{z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png",
+    attribution: '&copy; <a href="https://www.pdok.nl">PDOK/Kadaster</a>',
+    maxZoom: 19,
+  },
+];
+
+/** Bouton "+ Carte pays" (coin haut-gauche) : ouvre une liste de pays et
+ * ajoute/enlève à la demande la carte topo officielle du pays choisi,
+ * superposée au fond de carte courant. */
+export function CountryLayerPicker() {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState<Set<string>>(new Set());
+
+  function toggleCountry(key: string) {
+    setActive((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  return (
+    <>
+      <div className="leaflet-top leaflet-left" style={{ marginTop: 206 }}>
+        <div className="leaflet-control leaflet-bar">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            style={{
+              padding: "6px 10px",
+              background: "#fff",
+              color: "#000",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 13,
+              whiteSpace: "nowrap",
+            }}
+          >
+            🌍 Carte pays{active.size > 0 ? ` (${active.size})` : ""}
+          </button>
+          {open && (
+            <div style={{ background: "#fff", minWidth: 200 }}>
+              {COUNTRY_LAYERS.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => toggleCountry(c.key)}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "6px 10px",
+                    background: active.has(c.key) ? "#2f7d32" : "#fff",
+                    color: active.has(c.key) ? "#fff" : "#000",
+                    border: "none",
+                    borderTop: "1px solid #eee",
+                    cursor: "pointer",
+                    fontSize: 13,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      {COUNTRY_LAYERS.filter((c) => active.has(c.key)).map((c) => (
+        <TileLayer key={c.key} url={c.url} attribution={c.attribution} maxZoom={c.maxZoom} />
+      ))}
+    </>
   );
 }
