@@ -14,7 +14,7 @@ itinéraires de randonnée.
 - **Fiche détail** par randonnée : description, distance, dénivelé,
   **profil topologique** (graphique altitude / distance), trace GPX affichée
   sur la carte, section commentaires, édition en place (catégorie,
-  difficulté, durée, description, commentaires) via un token admin.
+  difficulté, durée, description, commentaires) une fois connecté.
 - **Liens externes multiples** par randonnée (Komoot, AllTrails, Garmin
   Connect, Visorando, ou tout autre site), ajoutables manuellement ou en
   masse depuis un fichier Excel.
@@ -32,6 +32,9 @@ itinéraires de randonnée.
   waypoints du GPX enregistré.
 - Import initial depuis un fichier Excel de liens existants, ou import en
   masse de traces GPX complètes depuis un export "Recto Verso".
+- **Page Sauvegarde** : export/import d'un `.zip` (randonnées + matériel,
+  deux fichiers séparés, GPX inclus), plus un job quotidien qui pousse ce
+  backup sur GitHub (voir [Sauvegarde applicative](#sauvegarde-applicative-page-sauvegarde)).
 
 ### Feuille de route (V2.2+)
 
@@ -135,6 +138,9 @@ Traefik.
 | `THUNDERFOREST_API_KEY` | Clé pour le fond de carte OpenCycleMap (optionnelle, voir ci-dessous) |
 | `TRAEFIK_DOMAIN` | Nom de domaine public utilisé par le label `traefik.http.routers.randonnees.rule` |
 | `FRONTEND_PORT` | Port exposé sur l'hôte pour le site (défaut `80`), inutilisé si accès uniquement via Traefik |
+| `BACKUP_ACCOUNT_EMAIL` / `BACKUP_ACCOUNT_PASSWORD` | Compte utilisé par `scripts/daily_backup.sh` pour s'authentifier auprès de l'API |
+| `GITHUB_BACKUP_TOKEN` | Token GitHub (accès uniquement au dépôt de backup) utilisé par `scripts/daily_backup.sh` |
+| `GITHUB_BACKUP_REPO` | Dépôt GitHub cible du backup quotidien, ex `XPouPouille/Backup` |
 
 ### Obtenir une clé IGN (optionnel)
 
@@ -218,6 +224,26 @@ Restauration :
 
 ```bash
 cat backup.sql | docker compose exec -T db psql -U <POSTGRES_USER> <POSTGRES_DB>
+```
+
+### Sauvegarde applicative (page "Sauvegarde")
+
+Le site a sa propre page `/sauvegarde` (connexion requise) : bouton pour
+télécharger un `.zip` (`hikes.json` + `equipment.json`, deux fichiers
+indépendants, matériel séparé des parcours + les GPX originaux), et un champ
+pour restaurer un `.zip` de ce format — **la restauration remplace
+entièrement** les randonnées et le matériel actuels, pas de fusion.
+
+Un job quotidien (`scripts/daily_backup.sh`, à lancer via cron) pousse
+automatiquement ce backup dans un dépôt GitHub dédié, séparé du code
+(`GITHUB_BACKUP_REPO` dans `.env`, sous-dossier `randonnees/`). Variables
+requises dans `.env` du serveur : `BACKUP_ACCOUNT_EMAIL`,
+`BACKUP_ACCOUNT_PASSWORD` (compte créé via la page Connexion),
+`GITHUB_BACKUP_TOKEN` (token avec accès uniquement à ce dépôt),
+`GITHUB_BACKUP_REPO`. Exemple de crontab :
+
+```
+0 3 * * * /home/xavier/randonnees/scripts/daily_backup.sh >> /home/xavier/randonnees-backup.log 2>&1
 ```
 
 ## Développement local (sans Docker)

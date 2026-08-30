@@ -5,6 +5,7 @@ import { HikeDetailPage } from "./pages/HikeDetailPage";
 import { AddHikePage } from "./pages/AddHikePage";
 import { CreatePage } from "./pages/CreatePage";
 import { EquipmentPage } from "./pages/EquipmentPage";
+import { BackupPage } from "./pages/BackupPage";
 import { LoginPage } from "./pages/LoginPage";
 import { useTheme } from "./theme";
 import { useAuth } from "./auth";
@@ -32,7 +33,7 @@ export function App() {
           <nav>
             <Link to="/">Carte</Link> · <Link to="/liste">Liste</Link> ·{" "}
             <Link to="/add">Ajouter une randonnée</Link> · <Link to="/creer">Créer un tracé</Link> ·{" "}
-            <Link to="/materiel">Matériel</Link> ·{" "}
+            <Link to="/materiel">Matériel</Link> · <Link to="/sauvegarde">Sauvegarde</Link> ·{" "}
             {email ? (
               <>
                 {email} · <button type="button" onClick={logout}>Déconnexion</button>
@@ -51,6 +52,7 @@ export function App() {
           <Route path="/add" element={<AddHikePage />} />
           <Route path="/creer" element={<CreatePage />} />
           <Route path="/materiel" element={<EquipmentPage />} />
+          <Route path="/sauvegarde" element={<BackupPage />} />
           <Route path="/connexion" element={<LoginPage />} />
         </Routes>
       </main>

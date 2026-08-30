@@ -216,3 +216,28 @@ export function reorderEquipmentCategories(ids: number[]): Promise<EquipmentCate
     body: JSON.stringify({ ids }),
   }).then((r) => handle(r));
 }
+
+export async function exportBackup(): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/backup/export`, { headers: adminHeaders() });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || `Erreur ${res.status}`);
+  }
+  return res.blob();
+}
+
+export interface BackupImportResult {
+  hikes_imported: number;
+  hikes_skipped: number;
+  equipment_items: number;
+}
+
+export function importBackup(file: File): Promise<BackupImportResult> {
+  const formData = new FormData();
+  formData.set("file", file);
+  return fetch(`${API_BASE}/backup/import`, {
+    method: "POST",
+    headers: adminHeaders(),
+    body: formData,
+  }).then((r) => handle(r));
+}
