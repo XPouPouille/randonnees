@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import L from "leaflet";
 import { CircleMarker, MapContainer, Marker, Polyline, Popup, useMap } from "react-leaflet";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { addPoisToHike, deleteHike, deletePoi, getHike, getPoi, updateHike } from "../api";
@@ -24,26 +23,17 @@ const POI_SEARCH_SAMPLE_MAX = 300;
 function FitTrackBounds({ coords }: { coords: [number, number][] | undefined }) {
   const map = useMap();
   useEffect(() => {
-    if (coords && coords.length >= 2) {
+    if (!coords || coords.length < 2) return;
+    // Le conteneur n'a pas encore sa taille finale au moment où cet effet
+    // tourne (mesuré : getSize() renvoie {x:0,y:0} ici) - fitBounds calcule
+    // alors un zoom infini, que Leaflet ramène au zoom max au lieu de
+    // dézoomer. Un setTimeout(0) laisse le navigateur finir la mise en page
+    // avant de mesurer/cadrer (même trick que FullscreenToggle plus haut).
+    const timeout = setTimeout(() => {
       map.invalidateSize();
-      const size = map.getSize();
-      const bounds = L.latLngBounds(coords);
-      // eslint-disable-next-line no-console
-      console.log(
-        "DEBUG",
-        JSON.stringify({
-          len: coords.length,
-          first: coords[0],
-          last: coords[coords.length - 1],
-          sizeX: size.x,
-          sizeY: size.y,
-          boundsValid: bounds.isValid(),
-          sw: bounds.getSouthWest(),
-          ne: bounds.getNorthEast(),
-        })
-      );
       map.fitBounds(coords, { padding: [20, 20] });
-    }
+    }, 0);
+    return () => clearTimeout(timeout);
   }, [map, coords]);
   return null;
 }
