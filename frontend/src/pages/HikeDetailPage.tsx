@@ -24,9 +24,13 @@ function FitTrackBounds({ coords }: { coords: [number, number][] | undefined }) 
   const map = useMap();
   useEffect(() => {
     if (coords && coords.length >= 2) {
-      // Sans invalidateSize, le conteneur peut ne pas encore avoir sa taille
-      // finale au premier rendu : fitBounds calcule alors un zoom infini
-      // (division par une taille nulle) et Leaflet retombe sur le zoom max.
+      // eslint-disable-next-line no-console
+      console.log("DEBUG FitTrackBounds", {
+        len: coords.length,
+        first: coords[0],
+        last: coords[coords.length - 1],
+        size: map.getSize(),
+      });
       map.invalidateSize();
       map.fitBounds(coords, { padding: [20, 20] });
     }
