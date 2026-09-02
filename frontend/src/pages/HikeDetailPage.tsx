@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import L from "leaflet";
 import { CircleMarker, MapContainer, Marker, Polyline, Popup, useMap } from "react-leaflet";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { addPoisToHike, deleteHike, deletePoi, getHike, getPoi, updateHike } from "../api";
@@ -24,14 +25,23 @@ function FitTrackBounds({ coords }: { coords: [number, number][] | undefined }) 
   const map = useMap();
   useEffect(() => {
     if (coords && coords.length >= 2) {
-      // eslint-disable-next-line no-console
-      console.log("DEBUG FitTrackBounds", {
-        len: coords.length,
-        first: coords[0],
-        last: coords[coords.length - 1],
-        size: map.getSize(),
-      });
       map.invalidateSize();
+      const size = map.getSize();
+      const bounds = L.latLngBounds(coords);
+      // eslint-disable-next-line no-console
+      console.log(
+        "DEBUG",
+        JSON.stringify({
+          len: coords.length,
+          first: coords[0],
+          last: coords[coords.length - 1],
+          sizeX: size.x,
+          sizeY: size.y,
+          boundsValid: bounds.isValid(),
+          sw: bounds.getSouthWest(),
+          ne: bounds.getNorthEast(),
+        })
+      );
       map.fitBounds(coords, { padding: [20, 20] });
     }
   }, [map, coords]);
