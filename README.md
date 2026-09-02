@@ -138,6 +138,7 @@ Traefik.
 | `THUNDERFOREST_API_KEY` | Clé pour le fond de carte OpenCycleMap (optionnelle, voir ci-dessous) |
 | `TRAEFIK_DOMAIN` | Nom de domaine public utilisé par le label `traefik.http.routers.randonnees.rule` |
 | `FRONTEND_PORT` | Port exposé sur l'hôte pour le site (défaut `80`), inutilisé si accès uniquement via Traefik |
+| `BACKUP_SITE_URL` | URL publique du site, utilisée par `scripts/daily_backup.sh` pour appeler l'API |
 | `BACKUP_ACCOUNT_EMAIL` / `BACKUP_ACCOUNT_PASSWORD` | Compte utilisé par `scripts/daily_backup.sh` pour s'authentifier auprès de l'API |
 | `GITHUB_BACKUP_TOKEN` | Token GitHub (accès uniquement au dépôt de backup) utilisé par `scripts/daily_backup.sh` |
 | `GITHUB_BACKUP_REPO` | Dépôt GitHub cible du backup quotidien, ex `XPouPouille/Backup` |
@@ -236,14 +237,18 @@ entièrement** les randonnées et le matériel actuels, pas de fusion.
 
 Un job quotidien (`scripts/daily_backup.sh`, à lancer via cron) pousse
 automatiquement ce backup dans un dépôt GitHub dédié, séparé du code
-(`GITHUB_BACKUP_REPO` dans `.env`, sous-dossier `randonnees/`). Variables
-requises dans `.env` du serveur : `BACKUP_ACCOUNT_EMAIL`,
+(`GITHUB_BACKUP_REPO` dans `.env`, sous-dossier `randonnees/`). Le script ne
+contient aucune adresse ni chemin propre à une machine : tout vient de `.env`
+(à côté de `docker-compose.yml`), donc il tourne tel quel sur n'importe
+quelle installation. Variables requises dans `.env` du serveur :
+`BACKUP_SITE_URL` (URL publique du site), `BACKUP_ACCOUNT_EMAIL` /
 `BACKUP_ACCOUNT_PASSWORD` (compte créé via la page Connexion),
 `GITHUB_BACKUP_TOKEN` (token avec accès uniquement à ce dépôt),
-`GITHUB_BACKUP_REPO`. Exemple de crontab :
+`GITHUB_BACKUP_REPO`. Exemple de crontab (chemins absolus obligatoires pour
+cron, à adapter à l'installation) :
 
 ```
-0 3 * * * /home/xavier/randonnees/scripts/daily_backup.sh >> /home/xavier/randonnees-backup.log 2>&1
+0 3 * * * /chemin/vers/randonnees/scripts/daily_backup.sh >> /chemin/vers/randonnees-backup.log 2>&1
 ```
 
 ## Développement local (sans Docker)

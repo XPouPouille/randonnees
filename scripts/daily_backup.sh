@@ -4,36 +4,52 @@
 # du dépôt GitHub "Backup" (partagé entre plusieurs projets, un
 # sous-dossier "randonnees/" par projet), commit et push si ça a changé.
 #
-# Pensé pour tourner via cron sur le Pi, ex (crontab -e) :
-#   0 3 * * * /home/xavier/randonnees/scripts/daily_backup.sh >> /home/xavier/randonnees-backup.log 2>&1
+# Pensé pour tourner via cron, ex (crontab -e) :
+#   0 3 * * * /chemin/vers/randonnees/scripts/daily_backup.sh >> /chemin/vers/randonnees-backup.log 2>&1
+# (chemins à adapter à l'installation : cron n'accepte pas de chemin relatif)
 #
-# Variables requises dans .env (à côté de docker-compose.yml) :
+# Toute la config (domaine du site, dossier de travail...) vient de .env, à
+# côté de docker-compose.yml : rien de propre à cette machine n'est en dur
+# dans ce script, donc il tourne tel quel sur n'importe quelle installation.
+#
+# Variables requises dans .env :
+#   BACKUP_SITE_URL : URL publique du site, ex https://mondomaine.example.com
 #   BACKUP_ACCOUNT_EMAIL / BACKUP_ACCOUNT_PASSWORD : compte utilisé pour
 #     s'authentifier auprès de l'API (comme n'importe quel compte créé via
 #     la page Connexion du site).
 #   GITHUB_BACKUP_TOKEN : token GitHub (accès en écriture au repo ci-dessous
-#     uniquement) - jamais commité, ajouté à la main dans .env sur le Pi.
+#     uniquement) - jamais commité, ajouté à la main dans .env sur le serveur.
 #   GITHUB_BACKUP_REPO : "utilisateur/repo", ex "XPouPouille/Backup".
+# Variable optionnelle :
+#   BACKUP_REPO_DIR : dossier où cloner le repo de backup (défaut : à côté du
+#     projet, "../randonnees-backups-repo" relatif à ce script).
 
 set -euo pipefail
 
-SITE_URL="${BACKUP_SITE_URL:-https://randonnees.ia.xavierchapouille.ddns.net}"
-BACKUP_REPO_DIR="${BACKUP_REPO_DIR:-/home/xavier/randonnees-backups-repo}"
-BACKUP_SUBDIR="randonnees"
-ENV_FILE="${BACKUP_ENV_FILE:-/home/xavier/randonnees/.env}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+ENV_FILE="${BACKUP_ENV_FILE:-$PROJECT_DIR/.env}"
+
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Fichier .env introuvable : $ENV_FILE" >&2
+  exit 1
+fi
 
 set -a
 source "$ENV_FILE"
 set +a
 
-for var in BACKUP_ACCOUNT_EMAIL BACKUP_ACCOUNT_PASSWORD GITHUB_BACKUP_TOKEN GITHUB_BACKUP_REPO; do
+for var in BACKUP_SITE_URL BACKUP_ACCOUNT_EMAIL BACKUP_ACCOUNT_PASSWORD GITHUB_BACKUP_TOKEN GITHUB_BACKUP_REPO; do
   if [ -z "${!var:-}" ]; then
     echo "$var manquant dans $ENV_FILE" >&2
     exit 1
   fi
 done
 
-TOKEN=$(curl -sf -X POST "$SITE_URL/api/auth/login" \
+BACKUP_REPO_DIR="${BACKUP_REPO_DIR:-$PROJECT_DIR/../randonnees-backups-repo}"
+BACKUP_SUBDIR="randonnees"
+
+TOKEN=$(curl -sf -X POST "$BACKUP_SITE_URL/api/auth/login" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$BACKUP_ACCOUNT_EMAIL\",\"password\":\"$BACKUP_ACCOUNT_PASSWORD\"}" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
@@ -41,7 +57,7 @@ TOKEN=$(curl -sf -X POST "$SITE_URL/api/auth/login" \
 TMP_ZIP=$(mktemp --suffix=.zip)
 trap 'rm -f "$TMP_ZIP"' EXIT
 
-curl -sf "$SITE_URL/api/backup/export" -H "Authorization: Bearer $TOKEN" -o "$TMP_ZIP"
+curl -sf "$BACKUP_SITE_URL/api/backup/export" -H "Authorization: Bearer $TOKEN" -o "$TMP_ZIP"
 
 mkdir -p "$BACKUP_REPO_DIR"
 cd "$BACKUP_REPO_DIR"
