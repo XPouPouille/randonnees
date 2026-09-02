@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CircleMarker, MapContainer, Marker, Polyline, Popup } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, useMap } from "react-leaflet";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { addPoisToHike, deleteHike, deletePoi, getHike, getPoi, updateHike } from "../api";
 import { useAuth } from "../auth";
@@ -17,6 +17,18 @@ import type { ActivityType, HikeDetail, PoiResult } from "../types";
 const POI_COLOR = "#e07b00";
 const FOUND_POI_COLOR = "#1565c0";
 const POI_SEARCH_SAMPLE_MAX = 300;
+
+/** Dézoome pour cadrer l'intégralité du tracé au chargement (au lieu de
+ * rester zoomé sur le seul point de départ). */
+function FitTrackBounds({ coords }: { coords: [number, number][] | undefined }) {
+  const map = useMap();
+  useEffect(() => {
+    if (coords && coords.length >= 2) {
+      map.fitBounds(coords, { padding: [20, 20] });
+    }
+  }, [map, coords]);
+  return null;
+}
 
 function directionsUrl(lat: number, lon: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
@@ -290,6 +302,7 @@ export function HikeDetailPage() {
       )}
 
       <MapContainer center={center} zoom={13} style={{ height: "50vh", width: "100%" }}>
+        <FitTrackBounds coords={coords} />
         <BaseLayers />
         <NationalParksToggle />
         <NationalParksAdhesionToggle />

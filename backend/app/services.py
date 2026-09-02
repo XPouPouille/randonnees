@@ -14,8 +14,12 @@ from app.schemas import HikeOut, HikeSummary
 
 # Tolérance de simplification (degrés) appliquée à la trace pour la vue
 # d'ensemble sur la carte liste : garde la forme visible sans envoyer chaque
-# point GPS brut pour des centaines de randonnées à la fois.
-LIST_SIMPLIFY_TOLERANCE = 0.002
+# point GPS brut pour des centaines de randonnées à la fois. Mesuré sur les
+# ~300 randonnées en prod : 0.002 -> ~710 Ko de géométrie cumulée, 0.01 ->
+# ~165 Ko (les traces restent visuellement fidèles à l'échelle où la page
+# Carte les affiche - à combiner avec la compression gzip côté nginx pour le
+# chargement sur réseau mobile limité).
+LIST_SIMPLIFY_TOLERANCE = 0.01
 
 IGN_ELEVATION_URL = "https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json"
 IGN_ITINERAIRE_URL = "https://data.geopf.fr/navigation/itineraire"
