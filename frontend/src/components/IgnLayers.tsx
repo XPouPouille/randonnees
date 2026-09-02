@@ -91,6 +91,13 @@ export function BaseLayers() {
           maxZoom={17}
         />
       </LayersControl.BaseLayer>
+      <LayersControl.BaseLayer name="Esri World Topo (monde)">
+        <TileLayer
+          attribution='&copy; <a href="https://www.esri.com">Esri</a> - World Topographic Map'
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          maxZoom={19}
+        />
+      </LayersControl.BaseLayer>
     </LayersControl>
   );
 }

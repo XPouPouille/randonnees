@@ -3,6 +3,7 @@ import { CircleMarker, MapContainer, Polyline, Popup, Tooltip, useMapEvents } fr
 import { Link, useNavigate } from "react-router-dom";
 import { createDrawnHike, getElevationProfile, getPoi, getRoute } from "../api";
 import { useAuth } from "../auth";
+import { ColombiaVectorToggle } from "../components/ColombiaVectorLayer";
 import { BaseLayers, CountryLayerPicker, FullscreenToggle, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
 import { MapLegend } from "../components/MapLegend";
 import { ElevationChart } from "../components/ElevationChart";
@@ -290,6 +291,7 @@ export function CreatePage() {
         <MapLegend />
         <FullscreenToggle />
         <CountryLayerPicker />
+        <ColombiaVectorToggle />
         <ClickHandler onClick={handleMapClick} />
         {displayLine.length >= 2 && <Polyline positions={displayLine} pathOptions={{ color, weight: 3 }} />}
         {points.map((p, i) => (

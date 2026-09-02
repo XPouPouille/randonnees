@@ -3,6 +3,7 @@ import { CircleMarker, MapContainer, Marker, Polyline, Popup } from "react-leafl
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { addPoisToHike, deleteHike, deletePoi, getHike, getPoi, updateHike } from "../api";
 import { useAuth } from "../auth";
+import { ColombiaVectorToggle } from "../components/ColombiaVectorLayer";
 import { BaseLayers, CountryLayerPicker, FullscreenToggle, NationalParksAdhesionToggle, NationalParksToggle } from "../components/IgnLayers";
 import { MapLegend } from "../components/MapLegend";
 import { ElevationChart } from "../components/ElevationChart";
@@ -295,6 +296,7 @@ export function HikeDetailPage() {
         <MapLegend />
         <FullscreenToggle />
         <CountryLayerPicker />
+        <ColombiaVectorToggle />
         {coords && <Polyline positions={coords} pathOptions={{ color: ACTIVITY_COLORS[hike.activity_type], weight: 4 }} />}
         {hike.start_lat != null && hike.start_lon != null && (
           <Marker position={[hike.start_lat, hike.start_lon]} />
